@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>作品集 · Portfolio</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+      background: #060b18;
+      color: #e8e8e8;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ══════════════════════════════
+       Hero / Header with Starfield
+    ══════════════════════════════ */
+    .hero {
+      position: relative;
+      text-align: center;
+      padding: 80px 20px 50px;
+      overflow: hidden;
+      background: linear-gradient(180deg, #050a14 0%, #0a1628 60%, #060b18 100%);
+    }
+    .hero canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .hero-content {
+      position: relative;
+      z-index: 2;
+    }
+    .hero h1 {
+      font-size: 2.8rem;
+      font-weight: 800;
+      letter-spacing: 6px;
+      background: linear-gradient(135deg, #f6d365 0%, #d4a030 40%, #fceabb 60%, #d4a030 100%);
+      background-size: 200% 200%;
+      animation: goldShimmer 4s ease infinite;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: none;
+    }
+    @keyframes goldShimmer {
+      0%, 100% { background-position: 0% 50%; }
+      50%      { background-position: 100% 50%; }
+    }
+    .hero p {
+      margin-top: 14px;
+      color: rgba(212, 160, 48, 0.6);
+      font-size: 0.95rem;
+      letter-spacing: 3px;
+    }
+    .hero-divider {
+      display: block;
+      width: 60px;
+      height: 2px;
+      margin: 22px auto 0;
+      background: linear-gradient(90deg, transparent, #d4a030, transparent);
+      border: none;
+    }
+
+    /* ── Filter Tabs ── */
+    .filter-bar {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 20px 20px 30px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(6, 11, 24, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(212, 160, 48, 0.08);
+    }
+    .filter-btn {
+      padding: 8px 22px;
+      border: 1px solid #1e2a42;
+      border-radius: 999px;
+      background: transparent;
+      color: #7a8ba8;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      user-select: none;
+    }
+    .filter-btn:hover {
+      border-color: #d4a030;
+      color: #f6d365;
+    }
+    .filter-btn.active {
+      background: linear-gradient(135deg, #d4a030, #f6d365);
+      border-color: transparent;
+      color: #0a1628;
+      font-weight: 600;
+      box-shadow: 0 0 20px rgba(212, 160, 48, 0.25);
+    }
+
+    /* ── Upload Button ── */
+    .upload-trigger {
+      padding: 8px 22px;
+      border: 1px dashed #d4a030;
+      border-radius: 999px;
+      background: rgba(212, 160, 48, 0.06);
+      color: #d4a030;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .upload-trigger:hover {
+      background: rgba(212, 160, 48, 0.15);
+      border-color: #f6d365;
+      color: #f6d365;
+    }
+
+    /* ── Grid ── */
+    .works-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px 60px;
+    }
+
+    /* ── Card with scroll reveal ── */
+    .card {
+      position: relative;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #0d1525;
+      border: 1px solid #162038;
+      transition: transform 0.4s cubic-bezier(.25,.46,.45,.94),
+                  box-shadow 0.4s ease,
+                  border-color 0.3s ease;
+      /* scroll reveal: start invisible */
+      opacity: 0;
+      transform: translateY(36px);
+    }
+    .card.revealed {
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 0.6s cubic-bezier(.25,.46,.45,.94),
+                  transform 0.6s cubic-bezier(.25,.46,.45,.94),
+                  box-shadow 0.4s ease,
+                  border-color 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55),
+                  0 0 30px rgba(212, 160, 48, 0.06);
+      border-color: rgba(212, 160, 48, 0.2);
+    }
+    .card.hidden { display: none; }
+    .card.user-uploaded { border-color: rgba(212, 160, 48, 0.15); }
+
+    /* ── Card image with hover zoom ── */
+    .card-img-wrap {
+      overflow: hidden;
+      position: relative;
+    }
+    .card-img {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      display: block;
+      background: #111a2e;
+      transition: transform 0.5s cubic-bezier(.25,.46,.45,.94);
+      cursor: pointer;
+    }
+    .card:hover .card-img {
+      transform: scale(1.06);
+    }
+    .card-body {
+      padding: 16px 18px 18px;
+    }
+    .card-category {
+      display: inline-block;
+      font-size: 0.72rem;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: rgba(212, 160, 48, 0.1);
+      color: #d4a030;
+      margin-bottom: 8px;
+      letter-spacing: 1px;
+    }
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #e0ddd5;
+    }
+    .card-desc {
+      font-size: 0.82rem;
+      color: #6b7a92;
+      line-height: 1.5;
+    }
+
+    /* ── Favorite Star ── */
+    .fav-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(6, 11, 24, 0.6);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s ease, background 0.2s ease;
+      z-index: 3;
+    }
+    .fav-btn:hover { transform: scale(1.15); background: rgba(6,11,24,0.85); }
+    .fav-btn svg { width: 20px; height: 20px; transition: fill 0.2s ease, stroke 0.2s ease; }
+    .fav-btn .star-outline { fill: none; stroke: #7a8ba8; stroke-width: 2; }
+    .fav-btn.favorited .star-outline { fill: #f6d365; stroke: #f6d365; }
+    .fav-btn.favorited { background: rgba(212, 160, 48, 0.2); }
+
+    /* ── Delete Button ── */
+    .del-btn {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(6, 11, 24, 0.6);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s ease, background 0.2s ease;
+      color: #7a8ba8;
+      font-size: 18px;
+      line-height: 1;
+      z-index: 3;
+    }
+    .del-btn:hover { transform: scale(1.15); background: rgba(180, 40, 40, 0.7); color: #fff; }
+
+    /* ── Animations ── */
+    @keyframes pop {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.35); }
+      100% { transform: scale(1); }
+    }
+    .fav-btn.pop { animation: pop 0.35s ease; }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .card.fade-in { animation: fadeInUp 0.4s ease forwards; }
+
+    /* ══════════════════════════════
+       Lightbox
+    ══════════════════════════════ */
+    .lightbox-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      background: rgba(2, 5, 12, 0.92);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      align-items: center;
+      justify-content: center;
+      cursor: zoom-out;
+    }
+    .lightbox-overlay.open { display: flex; }
+    .lightbox-overlay img {
+      max-width: 90vw;
+      max-height: 88vh;
+      border-radius: 10px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+      cursor: default;
+      opacity: 0;
+      transform: scale(0.92);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+    .lightbox-overlay.open img {
+      opacity: 1;
+      transform: scale(1);
+    }
+    .lightbox-close {
+      position: absolute;
+      top: 24px;
+      right: 28px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(6, 11, 24, 0.7);
+      color: #ccc;
+      font-size: 1.3rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, color 0.2s;
+      z-index: 2001;
+    }
+    .lightbox-close:hover { background: rgba(212, 160, 48, 0.3); color: #f6d365; }
+    .lightbox-title {
+      position: absolute;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255,255,255,0.7);
+      font-size: 0.9rem;
+      letter-spacing: 1px;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    /* ══════════════════════════════
+       Upload Modal
+    ══════════════════════════════ */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(2, 5, 12, 0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: #0d1525;
+      border: 1px solid #1e2a42;
+      border-radius: 18px;
+      width: 92%;
+      max-width: 480px;
+      padding: 32px 28px;
+      position: relative;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+    }
+    .modal h2 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, #d4a030, #f6d365);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 18px;
+      background: none;
+      border: none;
+      color: #4a5a72;
+      font-size: 1.4rem;
+      cursor: pointer;
+      transition: color 0.2s;
+      line-height: 1;
+    }
+    .modal-close:hover { color: #f6d365; }
+
+    .form-group { margin-bottom: 18px; }
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      color: #6b7a92;
+      margin-bottom: 6px;
+    }
+    .form-group input[type="text"],
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid #1e2a42;
+      background: #080e1c;
+      color: #e8e8e8;
+      font-size: 0.9rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      border-color: #d4a030;
+    }
+    .form-group textarea { resize: vertical; min-height: 60px; }
+    .form-group select { cursor: pointer; }
+    .form-group select option { background: #0d1525; }
+
+    .dropzone {
+      border: 2px dashed #1e2a42;
+      border-radius: 12px;
+      padding: 28px 16px;
+      text-align: center;
+      color: #4a5a72;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: border-color 0.25s, background 0.25s;
+      position: relative;
+      overflow: hidden;
+    }
+    .dropzone:hover, .dropzone.drag-over {
+      border-color: #d4a030;
+      background: rgba(212, 160, 48, 0.04);
+    }
+    .dropzone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .dropzone-icon { font-size: 2rem; margin-bottom: 6px; display: block; }
+    .dropzone-preview { max-height: 140px; border-radius: 8px; display: none; margin: 0 auto; }
+    .dropzone.has-image .dropzone-text { display: none; }
+    .dropzone.has-image .dropzone-preview { display: block; }
+    .dropzone.has-image { padding: 12px; }
+
+    .submit-btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #d4a030, #f6d365);
+      color: #0a1628;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.2s;
+      margin-top: 6px;
+    }
+    .submit-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .submit-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+
+    .storage-hint {
+      text-align: center;
+      font-size: 0.72rem;
+      color: #3a4a62;
+      margin-top: 12px;
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #0d1525;
+      border: 1px solid #1e2a42;
+      color: #e8e8e8;
+      padding: 12px 28px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      z-index: 3000;
+      opacity: 0;
+      transition: all 0.35s ease;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 40px 20px 30px;
+      color: #3a4a62;
+      font-size: 0.8rem;
+      border-top: 1px solid #111a2e;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      .hero h1 { font-size: 1.8rem; letter-spacing: 3px; }
+      .hero { padding: 60px 20px 36px; }
+      .works-grid { grid-template-columns: 1fr; padding: 0 16px 40px; }
+      .filter-btn, .upload-trigger { padding: 6px 16px; font-size: 0.82rem; }
+      .modal { padding: 24px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Hero with animated starfield ── -->
+  <header class="hero" id="hero">
+    <canvas id="starfield"></canvas>
+    <div class="hero-content">
+      <h1>作 品 集</h1>
+      <p>节目单 · 海报 · 概念设计 · PPT</p>
+      <hr class="hero-divider" />
+    </div>
+  </header>
+
+  <!-- ── Category Filter Tabs ── -->
+  <nav class="filter-bar" id="filterBar">
+    <button class="filter-btn active" data-category="all">All</button>
+    <button class="filter-btn" data-category="节目单">节目单</button>
+    <button class="filter-btn" data-category="海报">海报</button>
+    <button class="filter-btn" data-category="概念设计">概念设计</button>
+    <button class="filter-btn" data-category="PPT">PPT</button>
+    <button class="upload-trigger" id="uploadBtn">
+      <span>＋</span> 上传作品
+    </button>
+  </nav>
+
+  <!-- ── Works Grid ── -->
+  <main class="works-grid" id="worksGrid"></main>
+
+  <!-- ── Lightbox ── -->
+  <div class="lightbox-overlay" id="lightbox">
+    <button class="lightbox-close" id="lightboxClose">✕</button>
+    <img id="lightboxImg" src="" alt="" />
+    <div class="lightbox-title" id="lightboxTitle"></div>
+  </div>
+
+  <!-- ── Upload Modal ── -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <button class="modal-close" id="modalClose">✕</button>
+      <h2>上传新作品</h2>
+      <div class="form-group">
+        <label>作品标题</label>
+        <input type="text" id="inputTitle" placeholder="输入作品名称" maxlength="50" />
+      </div>
+      <div class="form-group">
+        <label>分类</label>
+        <select id="inputCategory">
+          <option value="节目单">节目单</option>
+          <option value="海报">海报</option>
+          <option value="概念设计">概念设计</option>
+          <option value="PPT">PPT</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>描述（可选）</label>
+        <textarea id="inputDesc" placeholder="简短介绍一下这个作品" maxlength="200"></textarea>
+      </div>
+      <div class="form-group">
+        <label>作品图片</label>
+        <div class="dropzone" id="dropzone">
+          <input type="file" id="inputFile" accept="image/*" />
+          <div class="dropzone-text">
+            <span class="dropzone-icon">🖼️</span>
+            点击或拖拽上传图片<br/>
+            <span style="color:#3a4a62;font-size:0.75rem;">支持 JPG / PNG / WebP，图片会自动压缩</span>
+          </div>
+          <img class="dropzone-preview" id="preview" alt="预览" />
+        </div>
+      </div>
+      <button class="submit-btn" id="submitBtn" disabled>添加到作品集</button>
+      <p class="storage-hint" id="storageHint">已用本地存储：计算中…</p>
+    </div>
+  </div>
+
+  <!-- ── Toast ── -->
+  <div class="toast" id="toast"></div>
+
+  <footer>
+    <p>&copy; 2026 作品集 · All rights reserved.</p>
+  </footer>
+
+<script>
+  // ════════════════════════════════════════
+  //  Animated Starfield (Canvas)
+  // ════════════════════════════════════════
+  (function initStarfield() {
+    const canvas = document.getElementById("starfield");
+    const ctx    = canvas.getContext("2d");
+    const hero   = document.getElementById("hero");
+    let stars = [];
+    const STAR_COUNT = 160;
+
+    function resize() {
+      const rect = hero.getBoundingClientRect();
+      canvas.width  = rect.width  * devicePixelRatio;
+      canvas.height = rect.height * devicePixelRatio;
+      canvas.style.width  = rect.width  + "px";
+      canvas.style.height = rect.height + "px";
+      ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    }
+
+    function seed() {
+      const w = canvas.width / devicePixelRatio;
+      const h = canvas.height / devicePixelRatio;
+      stars = [];
+      for (let i = 0; i < STAR_COUNT; i++) {
+        stars.push({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          r: Math.random() * 1.4 + 0.3,
+          alpha: Math.random(),
+          speed: Math.random() * 0.005 + 0.002,
+          phase: Math.random() * Math.PI * 2
+        });
+      }
+    }
+
+    let t = 0;
+    function draw() {
+      const w = canvas.width / devicePixelRatio;
+      const h = canvas.height / devicePixelRatio;
+      ctx.clearRect(0, 0, w, h);
+      t += 1;
+      for (const s of stars) {
+        const a = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(t * s.speed + s.phase));
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(220, 200, 160, ${a})`;
+        ctx.fill();
+      }
+      requestAnimationFrame(draw);
+    }
+
+    resize(); seed(); draw();
+    window.addEventListener("resize", () => { resize(); seed(); });
+  })();
+
+  // ════════════════════════════════════════
+  //  Built-in Project Data
+  // ════════════════════════════════════════
+  const builtinProjects = [
+    { id: "p01", title: "2024 元旦晚会节目单",   category: "节目单",   desc: "学院元旦晚会节目单设计，中国风主题。",         img: "https://picsum.photos/seed/prog01/600/450" },
+    { id: "p02", title: "2024 毕业典礼节目单",   category: "节目单",   desc: "毕业季典礼节目流程手册排版设计。",           img: "https://picsum.photos/seed/prog02/600/450" },
+    { id: "p03", title: "校园音乐节海报",         category: "海报",     desc: "赛博朋克风格校园音乐节宣传海报。",           img: "https://picsum.photos/seed/poster01/600/450" },
+    { id: "p04", title: "读书月活动海报",         category: "海报",     desc: "世界读书日系列活动宣传设计。",               img: "https://picsum.photos/seed/poster02/600/450" },
+    { id: "p05", title: "招新海报 · 设计部",      category: "海报",     desc: "社团招新系列海报之设计部。",                 img: "https://picsum.photos/seed/poster03/600/450" },
+    { id: "p06", title: "未来校园概念设计",        category: "概念设计", desc: "面向 2035 的未来大学校园空间想象。",           img: "https://picsum.photos/seed/concept01/600/450" },
+    { id: "p07", title: "虚拟展览馆概念",         category: "概念设计", desc: "线上 3D 虚拟展厅交互概念设计。",               img: "https://picsum.photos/seed/concept02/600/450" },
+    { id: "p08", title: "品牌形象概念设计",        category: "概念设计", desc: "某咖啡品牌全套视觉识别概念方案。",             img: "https://picsum.photos/seed/concept03/600/450" },
+    { id: "p09", title: "数据可视化汇报 PPT",     category: "PPT",     desc: "年度数据分析汇报演示文稿模板。",               img: "https://picsum.photos/seed/ppt01/600/450" },
+    { id: "p10", title: "毕业答辩 PPT",           category: "PPT",     desc: "简约学术风毕业论文答辩模板。",                 img: "https://picsum.photos/seed/ppt02/600/450" },
+    { id: "p11", title: "产品发布路演 PPT",        category: "PPT",     desc: "科技产品发布会路演演示文稿。",                 img: "https://picsum.photos/seed/ppt03/600/450" },
+    { id: "p12", title: "春节晚会节目单",          category: "节目单",   desc: "春节联欢活动节目单设计，喜庆红金配色。",       img: "https://picsum.photos/seed/prog03/600/450" }
+  ];
+
+  // ════════════════════════════════════════
+  //  LocalStorage Helpers
+  // ════════════════════════════════════════
+  const FAV_KEY     = "portfolio_favorites";
+  const UPLOADS_KEY = "portfolio_uploads";
+
+  function loadJSON(key, fallback = []) {
+    try { return JSON.parse(localStorage.getItem(key)) || fallback; }
+    catch { return fallback; }
+  }
+  function saveJSON(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
+
+  function loadFavorites()     { return loadJSON(FAV_KEY); }
+  function saveFavorites(favs) { saveJSON(FAV_KEY, favs);  }
+  function toggleFavorite(id) {
+    let favs = loadFavorites();
+    favs = favs.includes(id) ? favs.filter(f => f !== id) : [...favs, id];
+    saveFavorites(favs);
+    return favs.includes(id);
+  }
+
+  function loadUploads()        { return loadJSON(UPLOADS_KEY); }
+  function saveUploads(uploads) { saveJSON(UPLOADS_KEY, uploads); }
+
+  // ════════════════════════════════════════
+  //  Image compression
+  // ════════════════════════════════════════
+  function compressImage(file, maxW = 800, quality = 0.7) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let w = img.width, h = img.height;
+          if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+          canvas.width = w; canvas.height = h;
+          canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL("image/jpeg", quality));
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // ════════════════════════════════════════
+  //  Toast
+  // ════════════════════════════════════════
+  const toastEl = document.getElementById("toast");
+  let toastTimer;
+  function showToast(msg, ms = 2500) {
+    clearTimeout(toastTimer);
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    toastTimer = setTimeout(() => toastEl.classList.remove("show"), ms);
+  }
+
+  // ════════════════════════════════════════
+  //  Storage usage
+  // ════════════════════════════════════════
+  const storageHint = document.getElementById("storageHint");
+  function updateStorageHint() {
+    let total = 0;
+    for (let i = 0; i < localStorage.length; i++) {
+      total += (localStorage.getItem(localStorage.key(i)) || "").length * 2;
+    }
+    storageHint.textContent = `已用本地存储：${(total / 1024 / 1024).toFixed(2)} MB（浏览器上限约 5 MB）`;
+  }
+
+  // ════════════════════════════════════════
+  //  Card Builder
+  // ════════════════════════════════════════
+  const grid    = document.getElementById("worksGrid");
+  const starSVG = `<svg viewBox="0 0 24 24"><polygon class="star-outline" points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>`;
+
+  function createCard(p, isUserUpload = false) {
+    const isFav = loadFavorites().includes(p.id);
+    const card  = document.createElement("div");
+    card.className = `card${isUserUpload ? " user-uploaded" : ""}`;
+    card.dataset.category = p.category;
+    card.dataset.id       = p.id;
+
+    card.innerHTML = `
+      <div class="card-img-wrap">
+        <img class="card-img" src="${p.img}" alt="${p.title}" loading="lazy" data-title="${p.title}" />
+      </div>
+      ${isUserUpload ? `<button class="del-btn" data-id="${p.id}" title="删除此作品">✕</button>` : ""}
+      <button class="fav-btn ${isFav ? 'favorited' : ''}" aria-label="收藏" data-id="${p.id}">
+        ${starSVG}
+      </button>
+      <div class="card-body">
+        <span class="card-category">${p.category}</span>
+        <h3 class="card-title">${p.title}</h3>
+        <p class="card-desc">${p.desc || ""}</p>
+      </div>
+    `;
+    return card;
+  }
+
+  // ════════════════════════════════════════
+  //  Render All
+  // ════════════════════════════════════════
+  function renderAll() {
+    grid.innerHTML = "";
+    [...loadUploads()].reverse().forEach(p => grid.appendChild(createCard(p, true)));
+    builtinProjects.forEach(p => grid.appendChild(createCard(p, false)));
+    applyFilter();
+    observeCards();
+  }
+
+  // ════════════════════════════════════════
+  //  Scroll Reveal (IntersectionObserver)
+  // ════════════════════════════════════════
+  let observer;
+  function observeCards() {
+    if (observer) observer.disconnect();
+    observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry, i) => {
+        if (entry.isIntersecting) {
+          // stagger the reveal slightly per card
+          const card = entry.target;
+          const idx  = Array.from(grid.querySelectorAll(".card:not(.hidden)")).indexOf(card);
+          const delay = Math.min(idx * 60, 400);
+          setTimeout(() => card.classList.add("revealed"), delay);
+          observer.unobserve(card);
+        }
+      });
+    }, { threshold: 0.08 });
+
+    grid.querySelectorAll(".card").forEach(card => {
+      // Reset for re-observation (e.g. after filter change)
+      card.classList.remove("revealed");
+      observer.observe(card);
+    });
+  }
+
+  // ════════════════════════════════════════
+  //  Category Filter
+  // ════════════════════════════════════════
+  const filterBar = document.getElementById("filterBar");
+  let activeCategory = "all";
+
+  function applyFilter() {
+    grid.querySelectorAll(".card").forEach(card => {
+      if (activeCategory === "all" || card.dataset.category === activeCategory) {
+        card.classList.remove("hidden");
+      } else {
+        card.classList.add("hidden");
+      }
+    });
+  }
+
+  filterBar.addEventListener("click", e => {
+    const btn = e.target.closest(".filter-btn");
+    if (!btn) return;
+    filterBar.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    activeCategory = btn.dataset.category;
+    applyFilter();
+    observeCards(); // re-trigger scroll reveal for newly visible cards
+  });
+
+  // ════════════════════════════════════════
+  //  Lightbox
+  // ════════════════════════════════════════
+  const lightbox      = document.getElementById("lightbox");
+  const lightboxImg   = document.getElementById("lightboxImg");
+  const lightboxTitle = document.getElementById("lightboxTitle");
+  const lightboxClose = document.getElementById("lightboxClose");
+
+  function openLightbox(src, title) {
+    lightboxImg.src = src;
+    lightboxTitle.textContent = title || "";
+    lightbox.classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+  function closeLightbox() {
+    lightbox.classList.remove("open");
+    document.body.style.overflow = "";
+    setTimeout(() => { lightboxImg.src = ""; }, 350);
+  }
+
+  lightboxClose.addEventListener("click", closeLightbox);
+  lightbox.addEventListener("click", e => { if (e.target === lightbox) closeLightbox(); });
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") {
+      if (lightbox.classList.contains("open")) closeLightbox();
+      else closeModal();
+    }
+  });
+
+  // ════════════════════════════════════════
+  //  Grid click delegation: Fav / Delete / Lightbox
+  // ════════════════════════════════════════
+  grid.addEventListener("click", e => {
+    // Favorite
+    const favBtn = e.target.closest(".fav-btn");
+    if (favBtn) {
+      const nowFav = toggleFavorite(favBtn.dataset.id);
+      favBtn.classList.toggle("favorited", nowFav);
+      favBtn.classList.remove("pop");
+      void favBtn.offsetWidth;
+      favBtn.classList.add("pop");
+      return;
+    }
+
+    // Delete
+    const delBtn = e.target.closest(".del-btn");
+    if (delBtn) {
+      const id = delBtn.dataset.id;
+      if (!confirm("确定要删除这个作品吗？")) return;
+      saveUploads(loadUploads().filter(u => u.id !== id));
+      const card = delBtn.closest(".card");
+      card.style.transition = "opacity 0.3s, transform 0.3s";
+      card.style.opacity = "0";
+      card.style.transform = "scale(0.9)";
+      setTimeout(() => card.remove(), 300);
+      showToast("已删除 🗑️");
+      updateStorageHint();
+      return;
+    }
+
+    // Lightbox — click on card image
+    const img = e.target.closest(".card-img");
+    if (img) {
+      openLightbox(img.src, img.dataset.title);
+    }
+  });
+
+  // ════════════════════════════════════════
+  //  Upload Modal
+  // ════════════════════════════════════════
+  const modalOverlay = document.getElementById("modalOverlay");
+  const uploadBtn    = document.getElementById("uploadBtn");
+  const modalClose   = document.getElementById("modalClose");
+  const inputTitle   = document.getElementById("inputTitle");
+  const inputCat     = document.getElementById("inputCategory");
+  const inputDesc    = document.getElementById("inputDesc");
+  const inputFile    = document.getElementById("inputFile");
+  const dropzone     = document.getElementById("dropzone");
+  const previewImg   = document.getElementById("preview");
+  const submitBtn    = document.getElementById("submitBtn");
+  let pendingImage   = null;
+
+  function openModal()  { modalOverlay.classList.add("open"); updateStorageHint(); }
+  function closeModal() { modalOverlay.classList.remove("open"); resetForm(); }
+  function resetForm() {
+    inputTitle.value = ""; inputDesc.value = ""; inputCat.value = "节目单";
+    inputFile.value = ""; pendingImage = null; previewImg.src = "";
+    dropzone.classList.remove("has-image"); submitBtn.disabled = true;
+  }
+
+  uploadBtn.addEventListener("click", openModal);
+  modalClose.addEventListener("click", closeModal);
+  modalOverlay.addEventListener("click", e => { if (e.target === modalOverlay) closeModal(); });
+
+  function validateForm() { submitBtn.disabled = !(inputTitle.value.trim() && pendingImage); }
+  inputTitle.addEventListener("input", validateForm);
+
+  dropzone.addEventListener("dragover",  e => { e.preventDefault(); dropzone.classList.add("drag-over"); });
+  dropzone.addEventListener("dragleave", () => dropzone.classList.remove("drag-over"));
+  dropzone.addEventListener("drop", e => {
+    e.preventDefault(); dropzone.classList.remove("drag-over");
+    const f = e.dataTransfer.files[0];
+    if (f && f.type.startsWith("image/")) handleFile(f);
+  });
+  inputFile.addEventListener("change", () => { if (inputFile.files[0]) handleFile(inputFile.files[0]); });
+
+  async function handleFile(file) {
+    try {
+      pendingImage = await compressImage(file, 800, 0.7);
+      previewImg.src = pendingImage;
+      dropzone.classList.add("has-image");
+      validateForm();
+    } catch { showToast("图片读取失败，请换一张试试"); }
+  }
+
+  submitBtn.addEventListener("click", () => {
+    if (!inputTitle.value.trim() || !pendingImage) return;
+    const newWork = {
+      id: "u_" + Date.now(), title: inputTitle.value.trim(),
+      category: inputCat.value, desc: inputDesc.value.trim(), img: pendingImage
+    };
+    const uploads = loadUploads(); uploads.push(newWork);
+    try { saveUploads(uploads); }
+    catch { showToast("⚠️ 存储空间不足，请删除一些旧作品后重试", 4000); uploads.pop(); return; }
+
+    const card = createCard(newWork, true);
+    card.classList.add("fade-in", "revealed");
+    grid.insertBefore(card, grid.firstChild);
+    applyFilter();
+    closeModal();
+    showToast("✨ 作品已添加！");
+    updateStorageHint();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
+  // ════════════════════════════════════════
+  //  Initial Render
+  // ════════════════════════════════════════
+  renderAll();
+</script>
+
+</body>
+</html>
