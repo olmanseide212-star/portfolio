@@ -285,6 +285,15 @@
       .works-grid { grid-template-columns: 1fr; padding: 0 16px 40px; }
       .filter-btn { padding: 6px 16px; font-size: 0.82rem; }
     }
+    .admin-panel { max-width: 720px; margin: 24px auto; padding: 24px; background: #0d1525; border: 1px solid #293753; border-radius: 14px; }
+    .admin-panel h2 { color: #f6d365; margin-bottom: 16px; }
+    .admin-panel label { display: block; margin: 14px 0; }
+    .admin-panel input, .admin-panel select, .admin-panel textarea { display: block; width: 100%; margin-top: 6px; padding: 12px; font: inherit; background: #060b18; color: #e8e8e8; border: 1px solid #465573; border-radius: 6px; }
+    .admin-panel button, footer button { padding: 10px 18px; background: #f6d365; color: #060b18; border: 0; border-radius: 6px; font: inherit; cursor: pointer; margin: 8px 8px 8px 0; }
+    button:disabled { opacity: .55; cursor: wait; }
+    .notice { max-width: 720px; margin: 16px auto; padding: 0 20px; color: #b5c1d5; }
+    #preview { max-width: 100%; max-height: 220px; margin: 16px 0; }
+    @media (max-width: 640px) { .admin-panel { margin: 16px; padding: 20px; } }
   </style>
 </head>
 <body>
@@ -309,6 +318,26 @@
     <button class="filter-btn" data-category="摄影">摄影</button>
   </nav>
 
+  <p id="backendStatus" class="notice" role="status" aria-live="polite"></p>
+  <section id="adminPanel" class="admin-panel" hidden aria-label="作品管理">
+    <h2>作品管理</h2>
+    <form id="loginForm">
+      <label>邮箱<input name="email" type="email" autocomplete="username" required></label>
+      <label>密码<input name="password" type="password" autocomplete="current-password" required></label>
+      <button type="submit">登录</button>
+    </form>
+    <form id="workForm" hidden>
+      <label>操作<select name="project"><option value="">新增作品</option></select></label>
+      <label>作品标题<input name="title" required maxlength="80"></label>
+      <label>分类<select name="category"><option>节目单</option><option>海报</option><option>概念设计</option><option>PPT</option><option>摄影</option></select></label>
+      <label>作品介绍<textarea name="description" maxlength="1000" rows="3"></textarea></label>
+      <label>图片（JPG / PNG / WebP，最大 8 MB）<input name="image" type="file" accept="image/jpeg,image/png,image/webp"></label>
+      <p>新增作品需要图片；编辑已有作品时，不选图片会保留原图。</p>
+      <img id="preview" alt="待上传图片预览" hidden>
+      <button type="submit">发布作品</button><button type="button" id="logoutButton">退出登录</button>
+    </form>
+    <p id="adminStatus" role="status" aria-live="polite"></p>
+  </section>
   <!-- ── Works Grid ── -->
   <main class="works-grid" id="worksGrid" aria-label="Works 作品">
     <article class="card" data-category="节目单">
@@ -360,10 +389,13 @@
 
 
   <footer>
+    <button id="adminToggle" aria-expanded="false" aria-controls="adminPanel">管理作品</button>
     <p>&copy; 2026 作品集 · All rights reserved.</p>
   </footer>
 
-<script>
+<script type="module">
+  import { backendConfig } from './config.js';
+  import { PortfolioAPI } from './backend-client.js';
   // ════════════════════════════════════════
   //  Animated Starfield (Canvas)
   // ════════════════════════════════════════
@@ -428,7 +460,7 @@
   const lightboxClose = document.getElementById("lightboxClose");
   let previousFocus;
 
-  grid.querySelectorAll("[data-image]").forEach(wrap => {
+  function loadImages() { grid.querySelectorAll("[data-image]").forEach(wrap => {
     const title = wrap.closest(".card").querySelector(".card-title").textContent;
     const img = new Image();
     img.className = "card-img";
@@ -452,7 +484,8 @@
     // Missing artwork keeps the existing placeholder visible.
     img.onerror = () => { img.remove(); };
     img.src = wrap.dataset.image;
-  });
+  }); }
+  loadImages();
 
   filterBar.addEventListener("click", event => {
     const button = event.target.closest(".filter-btn");
@@ -461,11 +494,113 @@
       item.classList.toggle("active", item === button);
       item.setAttribute("aria-pressed", String(item === button));
     });
-    grid.querySelectorAll(".card").forEach(card => {
-      card.hidden = button.dataset.category !== "all" && card.dataset.category !== button.dataset.category;
-    });
+    applyFilter();
   });
   filterBar.querySelectorAll(".filter-btn:not(.active)").forEach(button => button.setAttribute("aria-pressed", "false"));
+
+  function applyFilter() {
+    const category = filterBar.querySelector('.active').dataset.category;
+    grid.querySelectorAll('.card').forEach(card => { card.hidden = category !== 'all' && card.dataset.category !== category; });
+  }
+  const api = backendConfig.url && backendConfig.publicKey ? new PortfolioAPI(backendConfig) : null;
+  const panel = document.getElementById('adminPanel');
+  const toggle = document.getElementById('adminToggle');
+  const login = document.getElementById('loginForm');
+  const form = document.getElementById('workForm');
+  const status = document.getElementById('adminStatus');
+  const backendStatus = document.getElementById('backendStatus');
+  if (!api) login.querySelectorAll('input,button').forEach(element => element.disabled = true);
+  let projects = [];
+  let busy = false;
+  let previewURL;
+  toggle.addEventListener('click', () => {
+    panel.hidden = !panel.hidden;
+    toggle.setAttribute('aria-expanded', String(!panel.hidden));
+    if (!api) status.textContent = '管理功能尚未连接，请先完成后端配置。';
+    if (!panel.hidden) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  function setBusy(value) {
+    busy = value;
+    panel.querySelectorAll('input,select,textarea,button').forEach(el => el.disabled = value);
+  }
+  function clearPreview() {
+    if (previewURL) URL.revokeObjectURL(previewURL);
+    previewURL = null;
+    const preview = document.getElementById('preview');
+    preview.removeAttribute('src'); preview.hidden = true;
+  }
+  function selectProject() {
+    const project = projects.find(p => p.id === form.elements.project.value);
+    form.elements.title.value = project?.title || '';
+    form.elements.category.value = project?.category || '节目单';
+    form.elements.description.value = project?.description || '';
+    form.elements.image.value = ''; clearPreview();
+  }
+  form.elements.project.addEventListener('change', selectProject);
+  form.elements.image.addEventListener('change', () => {
+    clearPreview();
+    const file = form.elements.image.files[0];
+    if (!file) return;
+    if (!['image/jpeg','image/png','image/webp'].includes(file.type) || file.size > 8388608) {
+      status.textContent = '请选择 8 MB 以内的 JPG、PNG 或 WebP 图片'; form.elements.image.value = ''; return;
+    }
+    previewURL = URL.createObjectURL(file);
+    const preview = document.getElementById('preview'); preview.src = previewURL; preview.hidden = false;
+  });
+  async function refreshProjects() {
+    const rows = await api.list();
+    projects = rows;
+    const cards = rows.map(project => {
+      const card = document.createElement('article'); card.className = 'card'; card.dataset.category = project.category;
+      const wrap = document.createElement('div'); wrap.className = 'card-img-wrap';
+      const imageURL = api.imageURL(project);
+      // Only trusted storage URLs or repository image paths may become image sources.
+      if (imageURL && (imageURL.startsWith(api.url + '/storage/v1/object/public/portfolio/') || /^images\/[a-zA-Z0-9._-]+$/.test(imageURL))) wrap.dataset.image = imageURL;
+      const placeholder = document.createElement('div'); placeholder.className = 'card-placeholder';
+      const heading = document.createElement('strong'); heading.textContent = project.title;
+      const hint = document.createElement('span'); hint.textContent = '图片待补充'; placeholder.append(heading, hint); wrap.append(placeholder);
+      const body = document.createElement('div'); body.className = 'card-body';
+      const category = document.createElement('span'); category.className = 'card-category'; category.textContent = project.category;
+      const title = document.createElement('h2'); title.className = 'card-title'; title.textContent = project.title;
+      const desc = document.createElement('p'); desc.className = 'card-desc'; desc.textContent = project.description;
+      body.append(category, title, desc); card.append(wrap, body); return card;
+    });
+    grid.replaceChildren(...cards); loadImages(); applyFilter();
+    form.elements.project.replaceChildren(new Option('新增作品', ''), ...rows.map(p => new Option(p.title, p.id)));
+  }
+  login.addEventListener('submit', async event => {
+    event.preventDefault(); if (!api || busy) return;
+    setBusy(true); status.textContent = '正在登录…';
+    try {
+      await api.login(login.elements.email.value.trim(), login.elements.password.value);
+      await refreshProjects(); login.reset(); login.hidden = true; form.hidden = false; status.textContent = '已登录，可以发布作品。';
+    } catch (error) { status.textContent = error.message; }
+    finally { setBusy(false); }
+  });
+  document.getElementById('logoutButton').addEventListener('click', async () => {
+    if (busy) return; setBusy(true);
+    try { await api.logout(); status.textContent = '已退出登录'; }
+    catch { status.textContent = '本机已退出；服务器会话撤销失败，请稍后重试。'; }
+    finally { form.reset(); clearPreview(); form.hidden = true; login.hidden = false; setBusy(false); }
+  });
+  form.addEventListener('submit', async event => {
+    event.preventDefault(); if (!api || busy) return;
+    const values = { id: form.elements.project.value, title: form.elements.title.value, category: form.elements.category.value, description: form.elements.description.value, file: form.elements.image.files[0] };
+    setBusy(true); status.textContent = '正在上传并发布，请勿关闭页面…';
+    let published = false;
+    try {
+      const saved = await api.save(values);
+      if (!saved?.length) throw new Error('作品未保存，请检查管理员权限后重试');
+      published = true; form.reset(); clearPreview(); await refreshProjects(); status.textContent = '发布成功，访客刷新页面即可看到作品。';
+    } catch (error) { status.textContent = published ? '发布已成功，但列表刷新失败。请刷新页面，不要重复发布。' : error.message; }
+    finally { setBusy(false); }
+  });
+  if (api) {
+    backendStatus.textContent = '正在加载作品…';
+    refreshProjects().then(() => { backendStatus.textContent = projects.length ? '' : '暂时还没有作品。'; })
+      .catch(() => { backendStatus.textContent = '在线作品暂时加载失败，当前展示静态作品。请刷新重试。'; });
+  }
+  window.addEventListener('beforeunload', event => { if (busy) { event.preventDefault(); event.returnValue = ''; } });
 
   function closeLightbox() {
     lightbox.classList.remove("open");
