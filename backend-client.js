@@ -2,7 +2,8 @@ export class PortfolioAPI {
   constructor(config, request = fetch) {
     this.url = config.url.replace(/\/$/, '');
     this.key = config.publicKey;
-    this.request = request;
+    // Native browser fetch requires the Window/global receiver, not this API instance.
+    this.request = request.bind(globalThis);
     this.session = null; // Tokens stay in memory; reloading requires signing in again.
   }
   async call(path, options = {}, authenticated = false) {

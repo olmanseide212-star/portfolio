@@ -8,6 +8,21 @@ function client(handler) {
   return api;
 }
 const work = { title: '作品', category: '摄影', description: '', file: new Blob(['image'], { type: 'image/png' }) };
+test('login invokes fetch with the browser global receiver', async () => {
+  const calls = [];
+  const api = client(async function (url, options) {
+    assert.equal(this, globalThis, 'native browser fetch rejects an API instance receiver');
+    calls.push(url);
+    if (url.includes('grant_type=password')) {
+      assert.deepEqual(JSON.parse(options.body), { email: 'admin@example.com', password: 'test-password' });
+      return response({ access_token: 'token', refresh_token: 'r', expires_in: 3600, user: { id: 'admin-id' } });
+    }
+    return response([{ user_id: 'admin-id' }]);
+  });
+  await api.login('admin@example.com', 'test-password');
+  assert.equal(calls.length, 2);
+  assert.equal(api.session.user.id, 'admin-id');
+});
 test('anonymous reads do not send an admin token', async () => {
   const api = client(async (url, options) => {
     assert.match(url, /projects\?select/); assert.equal(options.headers.Authorization, undefined); return response([]);
