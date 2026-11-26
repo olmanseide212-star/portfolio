@@ -2,6 +2,21 @@
 
 前端保留深蓝与金色、手机适配、分类筛选、图片大图。后端使用 Supabase 的 PostgreSQL、Auth 和 Storage。网站的「管理作品」支持管理员登录、新增与编辑作品、自定义分类、图片自动压缩、移入回收站和恢复。访客只能浏览。
 
+## 多页作品 / 作品文件夹（2026-11-26）
+
+在 Supabase SQL Editor 新建查询，执行 `backend/migrations/20261126_albums.sql` 全部内容。本脚本基于已完成的分类/回收站升级；可重复执行，不删除图片或重置页面顺序。全新项目运行完整 `backend/schema.sql` 即可。
+
+- 一件作品可包含 1–30 张图，首页显示封面和页数；点击卡片查看，支持上一页/下一页、缩略图、键盘左右键和手机左右滑动。
+- 在管理面板选择作品，「添加作品页面」可多选图片，也可分批追加。每张图片仍使用 50 MiB 原图上限和自动压缩流程。
+- 可以给页面命名为「正面」「背面」等，调整顺序、设为封面或移除单页。**第一张就是封面**，所有调整点击「保存修改」才生效。
+- 旧的单图作品自动保留为第一页。静态图片路径也会保留；如果原来的占位图片尚不存在，可在编辑列表中移除该占位页，再添加真实图片。
+- 移除单页不物理删除云端文件；整件作品移入回收站/恢复时，全部页面一起处理。当前没有单页回收站；未保存时可放弃编辑重新打开，已保存后需要重新添加移除的页。
+- 图片会逐张压缩、逐张上传，所有图片上传完成后，页面路径、顺序和名称通过一次数据库写入一起保存。中途失败不会更新一半的页面列表；会尝试清理本次新上传的文件，已发布内页受存储权限保护。
+- `projects.images` 保存有序 JSON 数组，每项为 `{path, caption}` 或 `{static_image, caption}`。数据库验证页数、名称长度、路径及重复图片，并自动同步旧的封面字段，兼容尚未刷新的旧客户端。
+- 旧数据库仍能展示原来的单图作品；新版保存前会检查是否升级，未升级会明确提示并在上传前停止。
+
+验收：选一个节目单，追加背面 → 命名正面/背面 → 保存 → 访客打开并翻页 → 设置背面为封面 → 保存刷新 → 移除一页 → 保存 → 删除整件作品再从回收站恢复，核对剩余页面和顺序。浏览器视觉、手机手势和实际云端上传仍需在升级后验证。
+
 ## 现有项目升级（2026-11-26）
 
 在 Supabase SQL Editor 执行 `backend/migrations/20261126_gallery.sql`。它会添加 `deleted_at` 字段、把固定分类改为 1–30 字符的自定义分类，并让访客只能读取未删除的作品，管理员仍可读取回收站。脚本可重复执行，不删除任何作品或图片。新安装执行下面完整 `schema.sql` 即可。
@@ -71,7 +86,7 @@ export const backendConfig = {
 ### 4. 发布
 
 ```sh
-git add index.html app.js image-processing.js config.js backend-client.js backend package.json tests README.md
+git add index.html app.js album.js image-processing.js config.js backend-client.js backend package.json package-lock.json .gitignore tests README.md
 git commit -m "feat: add Supabase artwork management"
 git push origin main
 ```
@@ -96,14 +111,15 @@ git push origin main
 
 ## 本地运行与测试
 
-需要 Node.js 20+、Python 3。无 npm 依赖、无构建步骤：
+需要 Node.js 20+、Python 3。网站运行时无 npm 依赖、无构建步骤；测试用 PGlite 在本地运行 PostgreSQL：
 
 ```sh
+npm ci
 npm test
 npm run preview
 ```
 
-访问 http://localhost:8000 ，不要双击 HTML 使用 file://（ES modules 需要 HTTP）。自动测试使用模拟 HTTP 响应和图片编码器，不会创建云端数据；真实浏览器的图片解码/编码、RLS、Storage 和跨设备验收需按上面的清单执行。
+访问 http://localhost:8000 ，不要双击 HTML 使用 file://（ES modules 需要 HTTP）。HTTP 和图片编码测试使用模拟响应；SQL 测试在隔离的本地 PostgreSQL（PGlite）中执行真实迁移，验证数据兼容、封面同步、访问权限和内页文件保护。测试不会连接或修改云端数据。真实浏览器图片解码/编码、Supabase Storage API 和跨设备验收仍需按上面的清单执行。
 
 ## 工程设计
 

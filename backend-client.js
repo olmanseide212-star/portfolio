@@ -1,3 +1,4 @@
+import { projectPages, pageURL, validatePages } from './album.js?v=20261126-albums';
 export class PortfolioAPI {
   constructor(config, request = fetch) {
     this.url = config.url.replace(/\/$/, '');
@@ -46,8 +47,9 @@ export class PortfolioAPI {
       }
       if (response.status === 401) throw new Error('登录失效或账号密码错误');
       if (response.status === 403) throw new Error('没有操作权限，请检查管理员设置');
+      if (detail?.code === 'PGRST204') throw new Error('数据库需要升级，请执行多页作品升级脚本');
       if (detail?.code === '42703') throw Object.assign(new Error('数据库需要升级，请执行作品管理升级脚本'), { code: '42703' });
-      if (detail?.code === '23514') throw new Error('数据不符合数据库规则；若使用新分类，请先执行分类升级脚本');
+      if (detail?.code === '23514') throw new Error('数据不符合数据库规则，请检查分类、页数和图片路径，并确认已执行升级脚本');
       if (response.status === 413) throw new Error('图片不能超过 8 MB');
       throw new Error(`请求失败（${response.status}），请检查后端配置或稍后重试`);
     }
@@ -79,6 +81,7 @@ export class PortfolioAPI {
     try {
       const rows = await this.call(`/rest/v1/projects?select=*&deleted_at=${archived ? 'not.is.null' : 'is.null'}&order=sort_order.desc,created_at.desc`, {}, archived);
       this.needsSchemaUpgrade = false;
+      this.needsAlbumUpgrade = rows.length > 0 && !Object.hasOwn(rows[0], 'images');
       return rows;
     } catch (error) {
       // Keep existing cloud artwork visible until the owner applies the migration.
@@ -97,13 +100,15 @@ export class PortfolioAPI {
     return rows[0];
   }
   imageURL(project) {
-    return project.image_path ? `${this.url}/storage/v1/object/public/portfolio/${project.image_path}` : project.static_image;
+    const cover = projectPages(project)[0];
+    return cover ? pageURL(cover, this.url) : null;
   }
-  async save({ id, title, category, description, file }) {
+  async save({ id, title, category, description, file, pages, onProgress }) {
     const types = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
     if (!this.session) throw new Error('请先登录');
     if (!title.trim() || title.trim().length > 80 || description.length > 1000) throw new Error('请检查标题和描述长度');
     if (typeof category !== 'string' || !category.trim() || [...category.trim()].length > 30) throw new Error('分类需为 1–30 个字符');
+    if (pages !== undefined) return this.saveAlbum({ id, title, category, description, pages, onProgress });
     if (!id && !file) throw new Error('新增作品需要选择图片');
     if (file && (!types[file.type] || !file.size || file.size > 8388608)) throw new Error('请选择 8 MB 以内的 JPG、PNG 或 WebP 图片');
     let path;
@@ -129,4 +134,47 @@ export class PortfolioAPI {
       throw error;
     }
   }
+  async saveAlbum({ id, title, category, description, pages, onProgress = () => {} }) {
+    validatePages(pages);
+    if (!id && !pages.length) throw new Error('新增作品至少需要一张图片');
+    // Fail before uploading if the owner has not applied the album migration.
+    try { await this.call('/rest/v1/projects?select=images&limit=0'); }
+    catch (error) {
+      if (error.code === '42703') throw new Error('请先执行多页作品升级脚本，再保存作品');
+      throw error;
+    }
+    const attemptedPaths = [], images = [];
+    try {
+      const total = pages.filter(page => page.file).length;
+      let uploaded = 0;
+      for (const page of pages) {
+        let path = page.path;
+        if (page.file) {
+          const extension = { 'image/jpeg':'jpg', 'image/png':'png', 'image/webp':'webp' }[page.file.type];
+          path = `${this.session.user.id}/${crypto.randomUUID()}.${extension}`;
+          // Include uncertain uploads in cleanup if a response is lost.
+          attemptedPaths.push(path);
+          onProgress(`正在上传第 ${++uploaded} / ${total} 张图片…`);
+          await this.call(`/storage/v1/object/portfolio/${path}`, {
+            method:'POST', headers:{'Content-Type':page.file.type,'x-upsert':'false'}, body:page.file
+          }, true);
+        }
+        images.push({ ...(path ? {path} : {static_image:page.static_image}), caption:page.caption || '' });
+      }
+      onProgress('正在保存作品页面与顺序…');
+      const record = { title:title.trim(), category:category.trim(), description, images };
+      const rows = await this.call(`/rest/v1/projects${id ? '?id=eq.'+encodeURIComponent(id) : ''}`, {
+        method:id ? 'PATCH':'POST', headers:{Prefer:'return=representation'}, body:JSON.stringify(record)
+      },true);
+      if (!rows?.length) throw new Error('作品未保存，请检查管理员权限');
+      return rows;
+    } catch (error) {
+      if (attemptedPaths.length) {
+        try { await this.call('/storage/v1/object/portfolio', {method:'DELETE',body:JSON.stringify({prefixes:attemptedPaths})},true); }
+        catch { throw new Error(`${error.message}；图片清理未确认，请刷新检查作品后再重试`); }
+      }
+      throw error;
+    }
+  }
+
 }

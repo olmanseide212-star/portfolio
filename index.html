@@ -849,6 +849,43 @@
         transition:none!important
       }
     }
+
+    .page-count { position:absolute;left:16px;bottom:16px;background:#101e2be8;color:#f3f1eb;padding:6px 12px;border:1px solid #ffffff25;font-size:12px;letter-spacing:.05em; }
+    .page-editor-heading { display:flex;justify-content:space-between;align-items:center;gap:12px;margin:24px 0 12px; }
+    .page-editor-heading h3 { font:22px var(--serif);margin:0; }
+    .page-editor-heading span,.page-editor-note { font-size:12px;color:var(--muted); }
+    .page-editor-note { margin:16px 0 22px; }
+    .page-editor-row { display:flex;gap:16px;padding:16px 0;border-top:1px solid var(--line); }
+    .editor-thumbnail { width:104px;height:110px;flex-shrink:0;background:#e5e6df;display:grid;place-items:center;font-size:12px;color:var(--muted); }
+    .editor-thumbnail img { width:100%;height:100%;object-fit:contain; }
+    .page-details { flex:1;min-width:0; }
+    .page-name { font-size:13px;display:block; }
+    .page-name span { display:block;margin-bottom:5px; }
+    .page-name input { width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:3px;background:white;color:var(--ink);font-size:14px; }
+    .page-file-info { display:block;overflow-wrap:anywhere;font-size:11px;color:var(--muted);margin-top:5px; }
+    .page-actions { display:flex;gap:16px;flex-wrap:wrap;margin-top:4px; }
+    .page-actions button { font-size:12px;color:#816638; }
+    .page-actions button[data-action="remove"] { color:#a74337; }
+    .page-stage { position:relative;flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center;touch-action:pan-y pinch-zoom; }
+    .lightbox .page-stage img { width:100%;height:100%;max-height:100%;flex:none;object-fit:contain; }
+    #pageLoadStatus { position:absolute;inset:auto 10px; }
+    .page-navigation { display:flex;gap:22px;align-items:center;font-size:13px;flex-shrink:0; }
+    .page-navigation button { color:var(--paper);border:1px solid #ffffff50;background:none;border-radius:3px;padding:8px 16px;font-size:13px; }
+    .page-navigation button:disabled { cursor:default;opacity:.3; }
+    .page-thumbnails { display:flex;gap:8px;max-width:100%;overflow-x:auto;padding:3px;flex-shrink:0; }
+    .page-thumbnail { position:relative;flex:0 0 56px;height:48px;padding:2px;background:#ffffff10;color:var(--paper);border:1px solid transparent; }
+    .page-thumbnail[aria-current="true"] { border-color:#d8c498; }
+    .page-thumbnail img { display:block;width:100%;height:100%;object-fit:contain; }
+    .page-thumbnail span { position:absolute;bottom:0;right:0;background:#101e2bcc;padding:0 4px;font-size:10px; }
+    .artwork .placeholder { width:100%;height:100%; }
+    @media(max-width:600px) {
+      .editor-thumbnail { width:68px;height:96px; }
+      .page-editor-row { gap:12px; }
+      .page-editor-heading { align-items:start;flex-direction:column;gap:4px; }
+      .page-actions { gap:12px; }
+      .lightbox-layout { gap:10px;padding-top:66px; }
+      .page-count { left:12px;bottom:12px; }
+    }
   </style>
 </head>
 <body>
@@ -868,11 +905,11 @@
   <dialog id="adminDialog" class="admin-dialog" aria-labelledby="adminHeading"><div class="dialog-top"><div><p class="eyebrow">Portfolio Studio</p><h2 id="adminHeading">作品管理</h2></div><button class="icon-close" id="adminClose" aria-label="关闭作品管理">×</button></div><div class="admin-body">
     <form id="loginForm"><p class="intro">登录后，整理作品、添加图片，记录新的创作。</p><label class="field"><span>邮箱</span><input name="email" type="email" autocomplete="username" required></label><label class="field"><span>密码</span><input name="password" type="password" autocomplete="current-password" required></label><button class="button" type="submit">登录工作室</button></form>
     <section id="studio" hidden><div class="admin-toolbar"><p class="intro" style="margin:0">你的作品，由你编排。</p><button class="text-button" id="logoutButton">退出登录</button></div><div class="tabs" role="group" aria-label="管理视图"><button id="editTab" aria-pressed="true">发布与编辑</button><button id="trashTab" aria-pressed="false">回收站</button></div>
-      <form id="workForm"><label class="field"><span>选择操作</span><select name="project"><option value="">新增作品</option></select></label><div class="form-grid"><label class="field"><span>作品标题</span><input name="title" maxlength="80" required placeholder="给这件作品起个名字"></label><label class="field"><span>作品分类</span><input name="category" list="categoryOptions" maxlength="30" required placeholder="选择已有分类，或输入新分类"><datalist id="categoryOptions"></datalist><small>新分类会在作品发布后出现在首页。</small></label></div><label class="field"><span>作品介绍</span><textarea name="description" maxlength="1000" rows="3" placeholder="想法、背景，或值得留意的细节。"></textarea></label><div class="upload-area"><label class="field"><span>作品图片</span><input name="image" type="file" accept="image/jpeg,image/png,image/webp"><small>支持最大 50 MB 的 JPG / PNG / WebP，自动优化后上传。编辑时不选图片会保留原图。</small></label><img id="preview" class="upload-preview" hidden alt="作品图片预览"><p class="file-info" id="fileInfo" aria-live="polite"></p></div><div class="form-actions"><button class="button danger" type="button" id="deleteButton" hidden>删除作品</button><div><button class="button secondary" type="button" id="resetButton">清空表单</button><button class="button" type="submit" id="publishButton">发布作品</button></div></div></form>
+      <form id="workForm"><label class="field"><span>选择操作</span><select name="project"><option value="">新增作品</option></select></label><div class="form-grid"><label class="field"><span>作品标题</span><input name="title" maxlength="80" required placeholder="给这件作品起个名字"></label><label class="field"><span>作品分类</span><input name="category" list="categoryOptions" maxlength="30" required placeholder="选择已有分类，或输入新分类"><datalist id="categoryOptions"></datalist><small>新分类会在作品发布后出现在首页。</small></label></div><label class="field"><span>作品介绍</span><textarea name="description" maxlength="1000" rows="3" placeholder="想法、背景，或值得留意的细节。"></textarea></label><div class="upload-area"><label class="field"><span>添加作品页面</span><input name="image" type="file" multiple accept="image/jpeg,image/png,image/webp"><small>一次选择正面、背面等多张图片，每件作品最多 30 页。每张原图最大 50 MB，自动压缩；添加图片会保留已有页面。</small></label><p class="file-info" id="fileInfo" aria-live="polite"></p></div><div class="page-editor-heading"><h3>作品文件夹</h3><span id="pageEditorCount">0 / 30 页 · 第一页为封面</span></div><div id="pageEditor" class="page-editor"></div><p class="page-editor-note">调整顺序、名称和移除单页后，点击保存才会生效。移除的图片不会立即从云存储删除。</p><div class="form-actions"><button class="button danger" type="button" id="deleteButton" hidden>删除作品</button><div><button class="button secondary" type="button" id="resetButton">清空表单</button><button class="button" type="submit" id="publishButton">发布作品</button></div></div></form>
       <section id="trashPanel" hidden aria-label="已删除作品"><p class="intro">删除的作品不再展示在首页，可在这里恢复。图片会保留，仍占用云存储空间。</p><div id="trashList"></div><button class="text-button" id="retryTrash">刷新回收站</button></section>
     </section><p id="adminStatus" class="status" role="status" aria-live="polite"></p>
   </div></dialog>
   <dialog id="deleteDialog" class="confirm-dialog" aria-labelledby="deleteHeading"><h2 id="deleteHeading">删除这件作品？</h2><p id="deleteDescription"></p><p>作品会从首页移除，你可以在回收站恢复。</p><div class="confirm-actions"><button class="button secondary" id="cancelDelete">取消</button><button class="button danger" id="confirmDelete">移入回收站</button></div></dialog>
-  <dialog id="lightbox" class="lightbox" aria-labelledby="lightboxTitle"><button class="icon-close" id="lightboxClose" aria-label="关闭大图">×</button><div class="lightbox-layout"><img id="lightboxImage" alt=""><div><h2 id="lightboxTitle"></h2><p id="lightboxCategory"></p></div><a id="originalLink" target="_blank" rel="noopener">在新窗口查看图片</a></div></dialog>
-  <script type="module" src="app.js?v=20261126"></script>
+  <dialog id="lightbox" class="lightbox" aria-labelledby="lightboxTitle"><button class="icon-close" id="lightboxClose" aria-label="关闭大图">×</button><div class="lightbox-layout"><div class="page-stage" id="pageStage"><img id="lightboxImage" alt=""><p id="pageLoadStatus" role="status"></p></div><div class="page-navigation"><button id="previousPage" aria-label="上一页">上一页</button><span id="pageCounter" role="status" aria-live="polite">1 / 1</span><button id="nextPage" aria-label="下一页">下一页</button></div><div id="pageThumbnails" class="page-thumbnails" aria-label="作品页面"></div><div><h2 id="lightboxTitle"></h2><p><span id="lightboxCategory"></span> · <span id="pageCaption"></span></p></div><a id="originalLink" target="_blank" rel="noopener">在新窗口查看这一页</a></div></dialog>
+  <script type="module" src="app.js?v=20261126-albums"></script>
 </body></html>

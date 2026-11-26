@@ -1,6 +1,7 @@
 import { backendConfig } from './config.js';
-import { PortfolioAPI } from './backend-client.js?v=20261126';
+import { PortfolioAPI } from './backend-client.js?v=20261126-albums';
 import { prepareImage, formatSize } from './image-processing.js?v=20261126';
+import { MAX_PAGES, projectPages, pageURL, movePage } from './album.js?v=20261126-albums';
 const $ = id => document.getElementById(id);
 const api = backendConfig.url && backendConfig.publicKey ? new PortfolioAPI(backendConfig) : null;
 const defaults = ['节目单','海报','概念设计','PPT','摄影'];
@@ -12,7 +13,7 @@ const fallback = [
   ['信息华章 PPT','PPT','information-huazhang-ppt.jpg'],
   ['摄影作品','摄影','photography.jpg']
 ].map(([title,category,file], i) => ({ id:`fallback-${i}`, title, category, description:'', static_image:`images/${file}` }));
-let projects = fallback, archived = [], online = false, selectedCategory = '', busy = false, preparedFile = null, previewURL = null, dirty = false, editingId = ''; 
+let projects = fallback, archived = [], online = false, selectedCategory = '', busy = false, draftPages = [], viewingProject = null, viewingPage = 0, dirty = false, editingId = '';
 const form = $('workForm'), login = $('loginForm'), admin = $('adminDialog');
 function el(tag, className, text) { const node = document.createElement(tag); if (className) node.className = className; if (text !== undefined) node.textContent = text; return node; }
 function notify(text, error = false) { $('adminStatus').textContent = text; $('adminStatus').classList.toggle('error', error); }
@@ -20,18 +21,42 @@ function setBusy(value) {
   busy = value;
   admin.querySelectorAll('input,textarea,select,button').forEach(node => { node.disabled = value; });
   $('deleteDialog').querySelectorAll('button').forEach(node => { node.disabled = value; });
+  if (!value) updatePageControls();
 }
-function imageURL(project) {
-  const value = api ? api.imageURL(project) : project.static_image;
-  if (!value) return null;
-  if (/^images\/[a-zA-Z0-9._-]+$/.test(value)) return value;
-  if (api && value.startsWith(api.url + '/storage/v1/object/public/portfolio/')) return value;
-  return null;
+function imageURL(project) { return pageURL(projectPages(project)[0] || {}, api?.url); }
+function openImage(project, index = 0) {
+  viewingProject = project; viewingPage = index;
+  $('lightboxTitle').textContent = project.title;
+  $('lightboxCategory').textContent = project.category;
+  $('pageThumbnails').replaceChildren(...projectPages(project).map((page, i) => {
+    const button = el('button','page-thumbnail'); button.type = 'button';
+    button.setAttribute('aria-label', `查看第 ${i+1} 页${page.caption ? '：'+page.caption : ''}`);
+    const src = pageURL(page, api?.url);
+    if (src) { const img = new Image(); img.src = src; img.alt = ''; img.loading = 'lazy'; img.onerror = () => img.remove(); button.append(img); }
+    button.append(el('span','',String(i+1))); button.addEventListener('click', () => { viewingPage = i; renderPage(); }); return button;
+  }));
+  renderPage(); $('lightbox').showModal();
 }
-function openImage(project, src) {
-  $('lightboxImage').src = src; $('lightboxImage').alt = project.title;
-  $('lightboxTitle').textContent = project.title; $('lightboxCategory').textContent = project.category;
-  $('originalLink').href = src; $('lightbox').showModal();
+function renderPage() {
+  const pages = projectPages(viewingProject), page = pages[viewingPage], src = pageURL(page,api?.url);
+  $('pageLoadStatus').textContent = '';
+  const image = new Image(); image.id = 'lightboxImage'; image.alt = `${viewingProject.title} · ${page.caption || '第 '+(viewingPage+1)+' 页'}`;
+  image.onload = () => { if (image.isConnected) $('pageLoadStatus').textContent = ''; };
+  image.onerror = () => { if (image.isConnected) { image.hidden = true; $('pageLoadStatus').textContent = '这张图片暂时无法加载，可以切换其他页面。'; } };
+  $('lightboxImage').replaceWith(image);
+  if (src) image.src = src; else { image.hidden = true; $('pageLoadStatus').textContent = '图片待补充'; }
+  $('originalLink').hidden = !src; if (src) $('originalLink').href = src; else $('originalLink').removeAttribute('href');
+  $('pageCounter').textContent = `${viewingPage+1} / ${pages.length}`;
+  $('pageCaption').textContent = page.caption || `第 ${viewingPage+1} 页`;
+  $('previousPage').disabled = viewingPage === 0; $('nextPage').disabled = viewingPage === pages.length-1;
+  $('pageThumbnails').hidden = pages.length < 2;
+  $('pageThumbnails').querySelectorAll('button').forEach((button, index) => { button.setAttribute('aria-current',String(index === viewingPage)); });
+}
+function stepPage(direction) {
+  if (!viewingProject) return;
+  const next = viewingPage + direction;
+  if (next < 0 || next >= projectPages(viewingProject).length) return;
+  viewingPage = next; renderPage();
 }
 function placeholder(project, unavailable = false) {
   const node = el('div','placeholder'); node.append(el('strong','',project.title),el('span','',unavailable ? '图片暂时无法加载' : '图片待补充')); return node;
@@ -44,10 +69,10 @@ function renderGallery() {
     const card = el('article','card');
     const src = imageURL(project);
     if (src) {
-      const button = el('button','artwork'); button.setAttribute('aria-label', `查看大图：${project.title}`);
+      const button = el('button','artwork'); button.setAttribute('aria-label', `打开作品：${project.title}，共 ${projectPages(project).length} 页`);
       const img = new Image(); img.alt = project.title; img.loading = 'lazy'; img.decoding = 'async';
-      img.onerror = () => button.replaceWith(placeholder(project, Boolean(project.image_path)));
-      img.src = src; button.append(img, el('span','view-label','查看作品')); button.addEventListener('click', () => openImage(project, src)); card.append(button);
+      img.onerror = () => img.replaceWith(placeholder(project, Boolean(project.image_path)));
+      img.src = src; button.append(img, el('span','view-label','查看作品')); button.append(el('span','page-count', `${projectPages(project).length} 页`)); button.addEventListener('click', () => openImage(project)); card.append(button);
     } else card.append(placeholder(project));
     const info = el('div','card-info'), meta = el('div','card-meta'); meta.append(el('span','',project.category));
     if (api?.session && online) {
@@ -78,16 +103,51 @@ async function refreshProjects() {
   projects = await api.list(); online = true;
   $('backendStatus').textContent = ''; renderFilters(); renderGallery(); renderPicker();
 }
-function clearPreview() {
-  if (previewURL) URL.revokeObjectURL(previewURL); previewURL = null; preparedFile = null;
-  $('preview').hidden = true; $('preview').removeAttribute('src'); $('fileInfo').textContent = '';
+function clearPages() {
+  for (const page of draftPages) if (page.previewURL) URL.revokeObjectURL(page.previewURL);
+  draftPages = []; $('pageEditor').replaceChildren(); $('fileInfo').textContent = '';
+}
+function updatePageControls() {
+  $('pageEditor').querySelectorAll('button[data-position]').forEach(button => {
+    const index = Number(button.dataset.position);
+    button.disabled = busy || (button.dataset.action === 'up' && index === 0) || (button.dataset.action === 'down' && index === draftPages.length-1) || (button.dataset.action === 'cover' && index === 0);
+  });
+}
+function renderEditor(focusIndex) {
+  $('pageEditor').replaceChildren(...draftPages.map((page, index) => {
+    const row = el('div','page-editor-row');
+    const thumbnail = el('div','editor-thumbnail'), src = page.previewURL || pageURL(page, api?.url);
+    if (src) { const img = new Image(); img.src = src; img.alt = page.caption || `第 ${index+1} 页`; img.onerror = () => { thumbnail.replaceChildren(el('span','','图片待补充')); }; thumbnail.append(img); }
+    else thumbnail.append(el('span','','图片待补充'));
+    const details = el('div','page-details'), label = el('label','page-name');
+    label.append(el('span','', index === 0 ? '第 1 页 · 封面' : `第 ${index+1} 页`));
+    const caption = el('input'); caption.type = 'text'; caption.maxLength = 80; caption.value = page.caption || ''; caption.placeholder = '页面名称，如：正面、背面';
+    caption.addEventListener('input', () => { page.caption = caption.value; dirty = true; }); label.append(caption); details.append(label);
+    if (page.info) details.append(el('small','page-file-info',page.info));
+    const actions = el('div','page-actions');
+    for (const [action, text] of [['cover','设为封面'],['up','前移'],['down','后移'],['remove','移除']]) {
+      const button = el('button','text-button',text); button.type = 'button'; button.dataset.action = action; button.dataset.position = index;
+      button.setAttribute('aria-label', `${text}第 ${index+1} 页`);
+      button.addEventListener('click', () => {
+        if (busy) return;
+        if (action === 'remove') { if (page.previewURL) URL.revokeObjectURL(page.previewURL); draftPages.splice(index,1); }
+        else draftPages = movePage(draftPages,index,action === 'cover' ? 0 : index+(action === 'up' ? -1 : 1));
+        dirty = true; renderEditor(Math.max(0, Math.min(index,draftPages.length-1)));
+      }); actions.append(button);
+    }
+    details.append(actions); row.append(thumbnail, details); return row;
+  }));
+  $('pageEditorCount').textContent = `${draftPages.length} / ${MAX_PAGES} 页 · 第一页为封面`;
+  if (!draftPages.length) $('pageEditor').append(el('p','intro','还没有页面。选择图片，一次添加正面、背面或更多内页。'));
+  updatePageControls();
+  if (focusIndex !== undefined) $('pageEditor').querySelectorAll('input')[focusIndex]?.focus();
 }
 function selectProject(id = '') {
-  clearPreview(); form.reset(); form.elements.project.value = id; editingId = id;
+  clearPages(); form.reset(); form.elements.project.value = id; editingId = id;
   const p = projects.find(item => item.id === id);
   form.elements.title.value = p?.title || ''; form.elements.category.value = p?.category || ''; form.elements.description.value = p?.description || '';
   $('deleteButton').hidden = !p; $('publishButton').textContent = p ? '保存修改' : '发布作品';
-  const src = p && imageURL(p); if (src) { $('preview').src = src; $('preview').hidden = false; }
+  draftPages = p ? projectPages(p) : []; renderEditor();
   dirty = false;
 }
 function allowDiscard() { return !dirty || window.confirm('当前修改尚未保存，要放弃这些修改吗？'); }
@@ -104,7 +164,19 @@ for (const button of document.querySelectorAll('[data-open-admin]')) button.addE
 $('adminClose').addEventListener('click', () => { if (!busy && allowDiscard()) { selectProject(); admin.close(); } });
 admin.addEventListener('cancel', event => { if (busy || !allowDiscard()) event.preventDefault(); else selectProject(); });
 $('lightboxClose').addEventListener('click', () => $('lightbox').close());
-$('lightbox').addEventListener('close', () => $('lightboxImage').removeAttribute('src'));
+$('lightbox').addEventListener('close', () => { $('lightboxImage').removeAttribute('src'); $('pageThumbnails').replaceChildren(); viewingProject = null; });
+$('previousPage').addEventListener('click', () => stepPage(-1));
+$('nextPage').addEventListener('click', () => stepPage(1));
+$('lightbox').addEventListener('keydown', event => {
+  if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); stepPage(event.key === 'ArrowLeft' ? -1 : 1); }
+});
+let touchStart;
+$('pageStage').addEventListener('touchstart', event => { touchStart = event.touches.length === 1 ? {x:event.touches[0].clientX,y:event.touches[0].clientY} : null; }, {passive:true});
+$('pageStage').addEventListener('touchend', event => {
+  if (!touchStart || event.changedTouches.length !== 1) return;
+  const x = event.changedTouches[0].clientX-touchStart.x, y = event.changedTouches[0].clientY-touchStart.y;
+  touchStart = null; if (Math.abs(x)>60 && Math.abs(x)>Math.abs(y)*1.5) stepPage(x<0 ? 1 : -1);
+}, {passive:true});
 $('search').addEventListener('input',renderGallery);
 form.addEventListener('input', event => { if (event.target !== form.elements.project) dirty = true; });
 form.elements.project.addEventListener('change', () => {
@@ -112,23 +184,27 @@ form.elements.project.addEventListener('change', () => {
   selectProject(form.elements.project.value); notify('');
 });
 $('resetButton').addEventListener('click', () => { if (allowDiscard()) { selectProject(); notify(''); } });
-$('preview').addEventListener('error', () => { $('preview').hidden = true; });
 form.elements.image.addEventListener('change', async () => {
-  const file = form.elements.image.files[0]; clearPreview(); if (!file) return;
-  setBusy(true); notify('');
+  const files = Array.from(form.elements.image.files); form.elements.image.value = ''; if (!files.length) return;
+  if (draftPages.length+files.length > MAX_PAGES) { notify(`每件作品最多 ${MAX_PAGES} 页，目前还能添加 ${MAX_PAGES-draftPages.length} 页。`,true); return; }
+  setBusy(true); notify(''); const added = [];
   try {
-    const result = await prepareImage(file, message => { $('fileInfo').textContent = message; });
-    preparedFile = result.file; previewURL = URL.createObjectURL(result.file); $('preview').src = previewURL; $('preview').hidden = false;
-    $('fileInfo').textContent = result.compressed ? `${formatSize(result.originalBytes)} → ${formatSize(result.file.size)} · ${result.width} × ${result.height} 像素，已优化` : `${formatSize(result.file.size)} · 已适合展示，保留原图`;
-  } catch (error) { form.elements.image.value = ''; $('fileInfo').textContent = ''; notify(error.message,true); }
-  finally { setBusy(false); }
+    for (const [index,file] of files.entries()) {
+      const result = await prepareImage(file, message => { $('fileInfo').textContent = `处理第 ${index+1} / ${files.length} 张：${message}`; });
+      added.push({file:result.file,caption:'',previewURL:URL.createObjectURL(result.file),info:`${file.name} · ${formatSize(result.originalBytes)} → ${formatSize(result.file.size)} · ${result.width} × ${result.height}`});
+    }
+    draftPages.push(...added); dirty = true; renderEditor(); $('fileInfo').textContent = `已添加 ${added.length} 页，保存后生效。可以继续选择图片。`;
+  } catch (error) {
+    for (const page of added) URL.revokeObjectURL(page.previewURL);
+    $('fileInfo').textContent = ''; notify(`本批图片未添加：${error.message}。已有页面已保留。`,true);
+  } finally { setBusy(false); }
 });
 login.addEventListener('submit', async event => {
   event.preventDefault(); if (busy || !api) return;
   setBusy(true); notify('正在登录…');
   try {
     await api.login(login.elements.email.value.trim(),login.elements.password.value);
-    await refreshProjects(); login.reset(); login.hidden = true; $('studio').hidden = false; showStudioTab(false); selectProject(); notify(api.needsSchemaUpgrade ? '已登录。请先执行数据库升级脚本，再使用自定义分类和回收站；现有作品仍可编辑。' : '已登录，可以发布作品。');
+    await refreshProjects(); login.reset(); login.hidden = true; $('studio').hidden = false; showStudioTab(false); selectProject(); notify(api.needsSchemaUpgrade ? '已登录。请先执行数据库升级脚本，再使用自定义分类和回收站；现有作品仍可编辑。' : api.needsAlbumUpgrade ? '已登录。保存多页作品前，请先执行多页作品升级脚本。' : '已登录，可以添加多页作品。');
   } catch (error) { notify(error.message,true); }
   finally { setBusy(false); }
 });
@@ -140,8 +216,8 @@ $('logoutButton').addEventListener('click', async () => {
 });
 form.addEventListener('submit', async event => {
   event.preventDefault(); if (busy || !api) return;
-  if (!form.elements.project.value && !preparedFile) { notify('请先选择作品图片。',true); return; }
-  const values = { id:form.elements.project.value, title:form.elements.title.value, category:form.elements.category.value, description:form.elements.description.value, file:preparedFile };
+  if (!form.elements.project.value && !draftPages.length) { notify('请先选择作品图片。',true); return; }
+  const values = { id:form.elements.project.value, title:form.elements.title.value, category:form.elements.category.value, description:form.elements.description.value, pages:draftPages.map(({file,path,static_image,caption}) => ({...(file ? {file} : path ? {path} : {static_image}),caption})), onProgress:message => notify(message) };
   setBusy(true); notify('正在发布，请勿关闭页面…'); let saved = false;
   try {
     await api.save(values); saved = true; dirty = false; selectProject(); await refreshProjects(); notify('已保存，访客刷新页面即可看到作品。');

@@ -150,3 +150,50 @@ test('old schema still serves existing public artwork until migration is applied
   assert.deepEqual(await api.list(),[{id:'legacy'}]); assert.equal(api.needsSchemaUpgrade,true);
   await assert.rejects(api.list(true), /数据库需要升级/);
 });
+const albumPath = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb.jpg';
+test('album saves existing and newly uploaded pages in one ordered database write', async () => {
+  const calls = [];
+  const api = client(async (url,options) => {
+    calls.push({url,...options});
+    return response(url.includes('limit=0') ? [] : url.includes('/rest/') ? [{id:'existing'}] : {});
+  });
+  await api.save({...work,id:'existing',pages:[{path:albumPath,caption:'正面'},{file:work.file,caption:'背面'}]});
+  assert.equal(calls.length,3); assert.equal(calls[1].method,'POST'); assert.equal(calls[2].method,'PATCH');
+  const record=JSON.parse(calls[2].body); assert.equal(record.images.length,2); assert.equal(record.images[0].path,albumPath);
+  assert.equal(record.images[1].caption,'背面'); assert.equal(record.images[1].file,undefined);
+});
+test('reorder and remove pages without uploading or deleting existing files', async () => {
+  const calls=[];
+  const api=client(async(url,options)=>{calls.push({url,...options});return response(url.includes('limit=0')?[]:[{id:'existing'}]);});
+  await api.save({...work,id:'existing',file:undefined,pages:[{path:albumPath,caption:'保留这一页'}]});
+  assert.equal(calls.length,2); assert.ok(calls.every(c=>c.url.includes('/rest/')));
+});
+test('missing album schema is rejected before uploading any file', async () => {
+  const calls=[];
+  const api=client(async(url)=>{calls.push(url);return response({code:'42703'},400);});
+  await assert.rejects(api.save({...work,pages:[{file:work.file}]}),/多页作品升级脚本/);
+  assert.equal(calls.length,1); assert.match(calls[0],/select=images/);
+});
+test('failed second upload cleans attempted new files and never changes the project', async () => {
+  const calls=[];let uploads=0;
+  const api=client(async(url,options)=>{
+    calls.push({url,...options});
+    if(options.method==='POST' && ++uploads===2) return response({},500);
+    return response(url.includes('limit=0')?[]:{});
+  });
+  await assert.rejects(api.save({...work,id:'existing',pages:[{path:albumPath},{file:work.file},{file:work.file}]}),/500/);
+  assert.ok(!calls.some(c=>c.method==='PATCH'));
+  const cleanup=calls.at(-1);assert.equal(cleanup.method,'DELETE');
+  const paths=JSON.parse(cleanup.body).prefixes;assert.equal(paths.length,2);assert.ok(!paths.includes(albumPath));
+});
+test('database failure after all uploads cleans the whole new batch', async () => {
+  const calls=[];
+  const api=client(async(url,options)=>{calls.push({url,...options});return url.includes('/rest/')&&options.method==='POST'?response({},403):response(url.includes('limit=0')?[]:{});});
+  await assert.rejects(api.save({...work,pages:[{file:work.file},{file:work.file}]}),/权限/);
+  assert.equal(JSON.parse(calls.at(-1).body).prefixes.length,2);
+});
+test('new empty album and invalid page lists fail before network access', async () => {
+  const api=client(()=>{throw new Error('must not call');});
+  await assert.rejects(api.save({...work,pages:[]}),/至少需要/);
+  await assert.rejects(api.save({...work,pages:[{path:albumPath},{path:albumPath}]}),/重复/);
+});
