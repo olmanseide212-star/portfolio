@@ -108,3 +108,15 @@ test('logout failure does not mask missing admin permissions', async () => {
   await assert.rejects(api.login('test@example.com', 'test-password'), /没有作品管理权限/);
   assert.equal(api.session, null);
 });
+test('unknown Auth errors preserve server diagnostics for troubleshooting', async () => {
+  const api = client(async () => response({ error: 'invalid_grant', error_description: 'Login method unavailable' }, 400));
+  await assert.rejects(api.login('test@example.com', 'test-password'), /认证失败（400）：invalid_grant：Login method unavailable/);
+});
+test('unknown Auth message is bounded and does not include submitted password', async () => {
+  const api = client(async () => response({ code: 'unknown_code', msg: 'reason'.repeat(100) }, 400));
+  await assert.rejects(api.login('test@example.com', 'secret-test-password'), error => {
+    assert.ok(error.message.length < 300);
+    assert.ok(!error.message.includes('secret-test-password'));
+    return true;
+  });
+});

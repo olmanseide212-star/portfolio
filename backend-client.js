@@ -35,6 +35,13 @@ export class PortfolioAPI {
         const code = detail?.code || detail?.error_code;
         if (authMessages[code]) throw new Error(authMessages[code]);
         if (response.status === 429) throw new Error('登录请求过于频繁，请稍后再试。');
+        // Keep unknown Auth diagnostics visible, without logging submitted credentials.
+        // The UI renders this message via textContent, never as HTML.
+        const reason = [code || detail?.error, detail?.msg || detail?.message || detail?.error_description]
+          .filter(value => typeof value === 'string' && value.trim())
+          .map(value => value.replace(/[\r\n\t]+/g, ' ').slice(0, 240))
+          .join('：');
+        if (reason) throw new Error(`认证失败（${response.status}）：${reason}`);
         if (response.status === 400) throw new Error('登录请求被拒绝（400），请检查管理员账号、邮箱验证状态和邮箱登录设置。');
       }
       if (response.status === 401) throw new Error('登录失效或账号密码错误');
