@@ -84,3 +84,27 @@ test('cleanup failure is surfaced instead of claiming a clean rollback', async (
     return url.includes('/rest/') ? response({}, 403) : response({});
   }); await assert.rejects(api.save(work), /清理未确认/);
 });
+for (const [code, message] of [
+  ['invalid_credentials', /邮箱或密码错误/],
+  ['email_not_confirmed', /邮箱尚未验证/],
+  ['email_provider_disabled', /未开启邮箱登录/],
+  ['captcha_failed', /验证码/]
+]) {
+  test(`login explains Supabase ${code} instead of a generic 400`, async () => {
+    const api = client(async () => response({ code }, 400));
+    await assert.rejects(api.login('test@example.com', 'test-password'), message);
+  });
+}
+test('non-JSON auth errors still produce a usable message', async () => {
+  const api = client(async () => new Response('Bad gateway', { status: 400 }));
+  await assert.rejects(api.login('test@example.com', 'test-password'), /登录请求被拒绝/);
+});
+test('logout failure does not mask missing admin permissions', async () => {
+  const api = client(async url => {
+    if (url.includes('grant_type=password')) return response({ access_token: 'token', refresh_token: 'r', expires_in: 3600, user: { id: 'ordinary' } });
+    if (url.includes('portfolio_admins')) return response([]);
+    return response({}, 500);
+  });
+  await assert.rejects(api.login('test@example.com', 'test-password'), /没有作品管理权限/);
+  assert.equal(api.session, null);
+});

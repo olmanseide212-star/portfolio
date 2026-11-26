@@ -21,6 +21,22 @@ export class PortfolioAPI {
     if (typeof options.body === 'string') headers['Content-Type'] = 'application/json';
     const response = await this.request(this.url + path, { ...options, headers, signal: AbortSignal.timeout(options.body instanceof Blob ? 120000 : 30000) });
     if (!response.ok) {
+      let detail = {};
+      try { detail = await response.json(); } catch { /* Gateways may return non-JSON errors. */ }
+      const authMessages = {
+        invalid_credentials: '邮箱或密码错误，或此邮箱尚未在当前 Supabase 项目创建账号。请使用作品管理员账号，不是 Supabase 控制台账号。',
+        email_not_confirmed: '邮箱尚未验证，请先完成邮箱确认，再登录。',
+        email_provider_disabled: '后端未开启邮箱登录，请在 Supabase Authentication 中启用 Email 登录。',
+        user_banned: '此账号已被禁用，请在 Supabase Authentication 检查账号状态。',
+        captcha_failed: '后端要求验证码，但当前登录页未接入验证码，请联系网站管理员。',
+        over_request_rate_limit: '登录请求过于频繁，请稍后再试。'
+      };
+      if (path.startsWith('/auth/v1/')) {
+        const code = detail?.code || detail?.error_code;
+        if (authMessages[code]) throw new Error(authMessages[code]);
+        if (response.status === 429) throw new Error('登录请求过于频繁，请稍后再试。');
+        if (response.status === 400) throw new Error('登录请求被拒绝（400），请检查管理员账号、邮箱验证状态和邮箱登录设置。');
+      }
       if (response.status === 401) throw new Error('登录失效或账号密码错误');
       if (response.status === 403) throw new Error('没有操作权限，请检查管理员设置');
       if (response.status === 413) throw new Error('图片不能超过 8 MB');
@@ -40,7 +56,11 @@ export class PortfolioAPI {
     try {
       const admins = await this.call('/rest/v1/portfolio_admins?select=user_id', {}, true);
       if (!admins.length) throw new Error('此账号没有作品管理权限');
-    } catch (error) { await this.logout(); throw error; }
+    } catch (error) {
+      // A logout/network failure must not hide the original authorization error.
+      try { await this.logout(); } catch { /* logout always clears the local session. */ }
+      throw error;
+    }
   }
   async logout() {
     try { if (this.session) await this.call('/auth/v1/logout', { method: 'POST' }, true); }
