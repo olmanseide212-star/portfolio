@@ -11,7 +11,8 @@ create policy admin_self on public.portfolio_admins for select to authenticated 
 create table if not exists public.projects (
   id uuid primary key default gen_random_uuid(),
   title text not null check (length(trim(title)) between 1 and 80),
-  category text not null check (category in ('节目单','海报','概念设计','PPT','摄影')),
+  category text not null check (char_length(btrim(category)) between 1 and 30),
+  deleted_at timestamptz,
   description text not null default '' check (length(description) <= 1000),
   image_path text unique check (image_path ~ '^[0-9a-f-]{36}/[0-9a-f-]{36}\.(jpg|png|webp)$'),
   static_image text,
@@ -56,3 +57,21 @@ insert into public.projects (id,title,category,static_image,sort_order) values
 ('00000000-0000-4000-8000-000000000005','信息华章 PPT','PPT','images/information-huazhang-ppt.jpg',2),
 ('00000000-0000-4000-8000-000000000006','摄影作品','摄影','images/photography.jpg',1)
 on conflict (id) do nothing;
+
+-- Also upgrade existing installations when rerunning this setup.
+-- Existing projects: run this migration once (safe to rerun).
+begin;
+alter table public.projects add column if not exists deleted_at timestamptz;
+alter table public.projects drop constraint if exists projects_category_check;
+alter table public.projects add constraint projects_category_check
+  check (char_length(btrim(category)) between 1 and 30);
+drop policy if exists public_read on public.projects;
+create policy public_read on public.projects for select to anon, authenticated
+  using (deleted_at is null);
+drop policy if exists admin_read_all on public.projects;
+create policy admin_read_all on public.projects for select to authenticated
+  using (exists (select 1 from public.portfolio_admins where user_id = (select auth.uid())));
+-- Existing admin-only UPDATE policy controls both archive and restore.
+-- No physical DELETE permission is granted. Images remain available for restoration.
+commit;
+notify pgrst, 'reload schema';

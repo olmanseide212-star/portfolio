@@ -46,6 +46,8 @@ export class PortfolioAPI {
       }
       if (response.status === 401) throw new Error('登录失效或账号密码错误');
       if (response.status === 403) throw new Error('没有操作权限，请检查管理员设置');
+      if (detail?.code === '42703') throw Object.assign(new Error('数据库需要升级，请执行作品管理升级脚本'), { code: '42703' });
+      if (detail?.code === '23514') throw new Error('数据不符合数据库规则；若使用新分类，请先执行分类升级脚本');
       if (response.status === 413) throw new Error('图片不能超过 8 MB');
       throw new Error(`请求失败（${response.status}），请检查后端配置或稍后重试`);
     }
@@ -73,8 +75,26 @@ export class PortfolioAPI {
     try { if (this.session) await this.call('/auth/v1/logout', { method: 'POST' }, true); }
     finally { this.session = null; }
   }
-  list() {
-    return this.call('/rest/v1/projects?select=*&order=sort_order.desc,created_at.desc');
+  async list(archived = false) {
+    try {
+      const rows = await this.call(`/rest/v1/projects?select=*&deleted_at=${archived ? 'not.is.null' : 'is.null'}&order=sort_order.desc,created_at.desc`, {}, archived);
+      this.needsSchemaUpgrade = false;
+      return rows;
+    } catch (error) {
+      // Keep existing cloud artwork visible until the owner applies the migration.
+      if (error.code !== '42703' || archived) throw error;
+      this.needsSchemaUpgrade = true;
+      return this.call('/rest/v1/projects?select=*&order=sort_order.desc,created_at.desc');
+    }
+  }
+  async setArchived(id, archived) {
+    if (!id) throw new Error('请先选择作品');
+    const rows = await this.call(`/rest/v1/projects?id=eq.${encodeURIComponent(id)}`, {
+      method: 'PATCH', headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({ deleted_at: archived ? new Date().toISOString() : null })
+    }, true);
+    if (!rows?.length) throw new Error('操作未完成，作品不存在或没有管理权限');
+    return rows[0];
   }
   imageURL(project) {
     return project.image_path ? `${this.url}/storage/v1/object/public/portfolio/${project.image_path}` : project.static_image;
@@ -83,7 +103,7 @@ export class PortfolioAPI {
     const types = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
     if (!this.session) throw new Error('请先登录');
     if (!title.trim() || title.trim().length > 80 || description.length > 1000) throw new Error('请检查标题和描述长度');
-    if (!['节目单','海报','概念设计','PPT','摄影'].includes(category)) throw new Error('请选择有效分类');
+    if (typeof category !== 'string' || !category.trim() || [...category.trim()].length > 30) throw new Error('分类需为 1–30 个字符');
     if (!id && !file) throw new Error('新增作品需要选择图片');
     if (file && (!types[file.type] || !file.size || file.size > 8388608)) throw new Error('请选择 8 MB 以内的 JPG、PNG 或 WebP 图片');
     let path;
@@ -93,7 +113,7 @@ export class PortfolioAPI {
         method: 'POST', headers: { 'Content-Type': file.type, 'x-upsert': 'false' }, body: file
       }, true);
     }
-    const record = { title: title.trim(), category, description, ...(path ? { image_path: path } : {}) };
+    const record = { title: title.trim(), category: category.trim(), description, ...(path ? { image_path: path } : {}) };
     try {
       const saved = await this.call(`/rest/v1/projects${id ? '?id=eq.' + encodeURIComponent(id) : ''}`, {
         method: id ? 'PATCH' : 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(record)

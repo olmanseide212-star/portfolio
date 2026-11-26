@@ -120,3 +120,33 @@ test('unknown Auth message is bounded and does not include submitted password', 
     return true;
   });
 });
+test('custom categories are trimmed and saved', async () => {
+  const api = client(async (url, options) => {
+    assert.equal(JSON.parse(options.body).category, '品牌设计'); return response([{ id:'existing' }]);
+  });
+  await api.save({ ...work, id:'existing', file:undefined, category:' 品牌设计 ' });
+});
+test('blank or overly long categories are rejected before network calls', async () => {
+  const api = client(() => { throw new Error('must not call'); });
+  for (const category of ['   ', 'a'.repeat(31)]) await assert.rejects(api.save({ ...work, category }), /分类需为/);
+});
+test('archiving and restoration update metadata without deleting the image', async () => {
+  const calls = [];
+  const api = client(async (url, options) => { calls.push({ url, ...options }); return response([{id:'existing'}]); });
+  await api.setArchived('existing',true); await api.setArchived('existing',false);
+  assert.equal(calls.length,2); assert.ok(calls.every(c => c.method === 'PATCH' && c.headers.Authorization === 'Bearer token'));
+  assert.ok(Date.parse(JSON.parse(calls[0].body).deleted_at)); assert.equal(JSON.parse(calls[1].body).deleted_at,null);
+});
+test('trash requires authentication and public list excludes archived records', async () => {
+  const api = client(async url => { assert.match(url, /deleted_at=is.null/); return response([]); });
+  await api.list(); api.session = null;
+  await assert.rejects(api.list(true), /登录/); await assert.rejects(api.setArchived('existing',true), /登录/);
+});
+test('empty archive update is not reported as success', async () => {
+  const api = client(async () => response([])); await assert.rejects(api.setArchived('missing',true), /操作未完成/);
+});
+test('old schema still serves existing public artwork until migration is applied', async () => {
+  const api = client(async url => url.includes('deleted_at=') ? response({code:'42703'},400) : response([{id:'legacy'}]));
+  assert.deepEqual(await api.list(),[{id:'legacy'}]); assert.equal(api.needsSchemaUpgrade,true);
+  await assert.rejects(api.list(true), /数据库需要升级/);
+});

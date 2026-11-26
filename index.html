@@ -1,621 +1,878 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>作品集 · Portfolio</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#101e2b">
+  <meta name="description" content="个人作品集，收录平面设计、视觉概念、演示设计与摄影作品。">
+  <title>作品集 · Selected Works</title>
   <style>
-    /* ── Reset & Base ── */
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body {
-      font-family: "PingFang SC", "Helvetica Neue", Arial, sans-serif;
-      background: #060b18;
-      color: #e8e8e8;
-      line-height: 1.6;
-      min-height: 100vh;
+    :root{
+      --navy:#101e2b;
+      --navy-light:#1b2d3d;
+      --paper:#f3f1eb;
+      --ink:#162735;
+      --muted:#64706d;
+      --gold:#b7a075;
+      --line:#d8d9d1;
+      --white:#faf9f5;
+      --serif:"Songti SC","STSong","Noto Serif CJK SC",Georgia,serif
     }
-
-    /* ══════════════════════════════
-       Hero / Header with Starfield
-    ══════════════════════════════ */
-    .hero {
-      position: relative;
-      text-align: center;
-      padding: 80px 20px 50px;
-      overflow: hidden;
-      background: linear-gradient(180deg, #050a14 0%, #0a1628 60%, #060b18 100%);
+    *{
+      box-sizing:border-box
     }
-    .hero canvas {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
+    body{
+      margin:0;
+      background:var(--paper);
+      color:var(--ink);
+      font-family:"PingFang SC","Microsoft YaHei",Arial,sans-serif;
+      line-height:1.65
     }
-    .hero-content {
-      position: relative;
-      z-index: 2;
+    button,input,textarea,select{
+      font:inherit
     }
-    .hero h1 {
-      font-size: 2.8rem;
-      font-weight: 800;
-      letter-spacing: 6px;
-      background: linear-gradient(135deg, #f6d365 0%, #d4a030 40%, #fceabb 60%, #d4a030 100%);
-      background-size: 200% 200%;
-      animation: goldShimmer 4s ease infinite;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-shadow: none;
+    button,a,input,textarea,select{
+      -webkit-tap-highlight-color:transparent
     }
-    @keyframes goldShimmer {
-      0%, 100% { background-position: 0% 50%; }
-      50%      { background-position: 100% 50%; }
+    button{
+      cursor:pointer
     }
-    .hero p {
-      margin-top: 14px;
-      color: rgba(212, 160, 48, 0.6);
-      font-size: 0.95rem;
-      letter-spacing: 3px;
+    a{
+      color:inherit;
+      text-decoration:none
     }
-    .hero-divider {
-      display: block;
-      width: 60px;
-      height: 2px;
-      margin: 22px auto 0;
-      background: linear-gradient(90deg, transparent, #d4a030, transparent);
-      border: none;
+    button:disabled{
+      opacity:.5;
+      cursor:wait
     }
-
-    /* ── Filter Tabs ── */
-    .filter-bar {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 10px;
-      padding: 20px 20px 30px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: rgba(6, 11, 24, 0.88);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border-bottom: 1px solid rgba(212, 160, 48, 0.08);
+    [hidden]{
+      display:none!important
     }
-    .filter-btn {
-      padding: 8px 22px;
-      border: 1px solid #1e2a42;
-      border-radius: 999px;
-      background: transparent;
-      color: #7a8ba8;
-      font-size: 0.9rem;
-      cursor: pointer;
-      transition: all 0.25s ease;
-      user-select: none;
+    :focus-visible{
+      outline:2px solid #aa8341;
+      outline-offset:5px
     }
-    .filter-btn:hover {
-      border-color: #d4a030;
-      color: #f6d365;
+    html{
+      scroll-behavior:smooth
     }
-    .filter-btn.active {
-      background: linear-gradient(135deg, #d4a030, #f6d365);
-      border-color: transparent;
-      color: #0a1628;
-      font-weight: 600;
-      box-shadow: 0 0 20px rgba(212, 160, 48, 0.25);
+    ::selection{
+      background:#d7c7a6;
+      color:var(--navy)
     }
-
-    /* ── Placeholder for missing images ── */
-    .card-placeholder {
-      width: 100%;
-      aspect-ratio: 4 / 3;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #0d1525 0%, #162038 100%);
-      color: #3a4a62;
-      font-size: 0.8rem;
-      text-align: center;
-      padding: 20px;
-      gap: 8px;
+    .wrap{
+      width:min(1280px,calc(100% - 112px));
+      margin:auto
     }
-    .card-placeholder strong { color: #f6d365; font-size: 1.2rem; }
-    .card-placeholder span { color: #a9b5c9; }
-    [hidden] { display: none !important; }
-    .image-button { display: block; width: 100%; padding: 0; border: 0; background: none; }
-    button:focus-visible { outline: 2px solid #f6d365; outline-offset: -4px; }
-
-    /* ── Grid ── */
-    .works-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 24px;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 24px 60px;
+    .site-top{
+      background:var(--navy);
+      color:var(--paper)
     }
-
-    /* ── Card with scroll reveal ── */
-    .card {
-      position: relative;
-      border-radius: 14px;
-      overflow: hidden;
-      background: #0d1525;
-      border: 1px solid #162038;
-      transition: transform 0.4s cubic-bezier(.25,.46,.45,.94),
-                  box-shadow 0.4s ease,
-                  border-color 0.3s ease;
-      opacity: 1;
+    .nav{
+      height:98px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      border-bottom:1px solid #ffffff20
     }
-    .card.revealed {
-      opacity: 1;
-      transform: translateY(0);
-      transition: opacity 0.6s cubic-bezier(.25,.46,.45,.94),
-                  transform 0.6s cubic-bezier(.25,.46,.45,.94),
-                  box-shadow 0.4s ease,
-                  border-color 0.3s ease;
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      font-size:14px;
+      letter-spacing:.12em
     }
-    .card:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55),
-                  0 0 30px rgba(212, 160, 48, 0.06);
-      border-color: rgba(212, 160, 48, 0.2);
+    .brand-mark{
+      display:grid;
+      place-items:center;
+      width:34px;
+      height:34px;
+      border:1px solid var(--gold);
+      color:var(--gold);
+      font:22px Georgia,serif
     }
-    .card.hidden { display: none; }
-
-    /* ── Card image with hover zoom ── */
-    .card-img-wrap {
-      overflow: hidden;
-      position: relative;
+    .nav-links{
+      display:flex;
+      gap:32px;
+      align-items:center;
+      font-size:14px
     }
-    .card-img {
-      width: 100%;
-      aspect-ratio: 4 / 3;
-      object-fit: cover;
-      display: block;
-      background: #111a2e;
-      transition: transform 0.5s cubic-bezier(.25,.46,.45,.94);
-      cursor: pointer;
+    .nav-links a:hover{
+      color:#dbc79d
     }
-    .card:hover .card-img {
-      transform: scale(1.06);
+    .text-button{
+      background:none;
+      border:0;
+      color:inherit;
+      padding:6px 0
     }
-    .card-body {
-      padding: 16px 18px 18px;
+    .nav-links .text-button{
+      color:#c2c8ca;
+      font-size:14px
     }
-    .card-category {
-      display: inline-block;
-      font-size: 0.72rem;
-      padding: 3px 10px;
-      border-radius: 999px;
-      background: rgba(212, 160, 48, 0.1);
-      color: #d4a030;
-      margin-bottom: 8px;
-      letter-spacing: 1px;
+    .hero{
+      display:grid;
+      grid-template-columns:1.5fr 1fr;
+      gap:60px;
+      padding:90px 0 82px;
+      align-items:end
     }
-    .card-title {
-      font-size: 1.05rem;
-      font-weight: 600;
-      margin-bottom: 6px;
-      color: #e0ddd5;
+    .eyebrow{
+      font-size:12px;
+      letter-spacing:.2em;
+      text-transform:uppercase;
+      color:var(--gold);
+      margin:0 0 26px
     }
-    .card-desc {
-      font-size: 0.82rem;
-      color: #6b7a92;
-      line-height: 1.5;
+    .hero h1{
+      font-family:var(--serif);
+      font-size:clamp(44px,5.5vw,78px);
+      font-weight:400;
+      letter-spacing:.04em;
+      line-height:1.32;
+      margin:0
     }
-
-    /* ══════════════════════════════
-       Lightbox
-    ══════════════════════════════ */
-    .lightbox-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      z-index: 2000;
-      background: rgba(2, 5, 12, 0.92);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      align-items: center;
-      justify-content: center;
-      cursor: zoom-out;
+    .hero h1 em{
+      font-style:normal;
+      color:#d8c498
     }
-    .lightbox-overlay.open { display: flex; }
-    .lightbox-overlay img {
-      max-width: 90vw;
-      max-height: 88vh;
-      border-radius: 10px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.7);
-      cursor: default;
-      opacity: 0;
-      transform: scale(0.92);
-      transition: opacity 0.35s ease, transform 0.35s ease;
+    .hero-side{
+      padding:0 0 6px 24px;
+      border-left:1px solid #ffffff25
     }
-    .lightbox-overlay.open img {
-      opacity: 1;
-      transform: scale(1);
+    .hero-side .english{
+      font:italic clamp(36px,4vw,62px)/1.05 Georgia,serif;
+      color:#d8c498;
+      letter-spacing:-.025em;
+      margin:0 0 24px
     }
-    .lightbox-close {
-      position: absolute;
-      top: 24px;
-      right: 28px;
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      border: 1px solid rgba(255,255,255,0.15);
-      background: rgba(6, 11, 24, 0.7);
-      color: #ccc;
-      font-size: 1.3rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.2s, color 0.2s;
-      z-index: 2001;
+    .hero-side p:last-child{
+      font-size:14px;
+      line-height:1.9;
+      color:#abb6bc;
+      margin:0;
+      max-width:280px
     }
-    .lightbox-close:hover { background: rgba(212, 160, 48, 0.3); color: #f6d365; }
-    .lightbox-title {
-      position: absolute;
-      bottom: 28px;
-      left: 50%;
-      transform: translateX(-50%);
-      color: rgba(255,255,255,0.7);
-      font-size: 0.9rem;
-      letter-spacing: 1px;
-      text-align: center;
-      pointer-events: none;
+    .hero-bottom{
+      display:flex;
+      justify-content:space-between;
+      padding:22px 0;
+      border-top:1px solid #ffffff20;
+      color:#a9b3b9;
+      letter-spacing:.12em;
+      font-size:11px
     }
-
-
-
-    /* ── Footer ── */
-    footer {
-      text-align: center;
-      padding: 40px 20px 30px;
-      color: #3a4a62;
-      font-size: 0.8rem;
-      border-top: 1px solid #111a2e;
+    .hero-bottom span:last-child{
+      color:#d8c498
     }
-
-    /* ── Responsive ── */
-    @media (max-width: 640px) {
-      .hero h1 { font-size: 1.8rem; letter-spacing: 3px; }
-      .hero { padding: 60px 20px 36px; }
-      .works-grid { grid-template-columns: 1fr; padding: 0 16px 40px; }
-      .filter-btn { padding: 6px 16px; font-size: 0.82rem; }
+    .works{
+      padding:66px 0 80px;
+      scroll-margin-top:24px
     }
-    .admin-panel { max-width: 720px; margin: 24px auto; padding: 24px; background: #0d1525; border: 1px solid #293753; border-radius: 14px; }
-    .admin-panel h2 { color: #f6d365; margin-bottom: 16px; }
-    .admin-panel label { display: block; margin: 14px 0; }
-    .admin-panel input, .admin-panel select, .admin-panel textarea { display: block; width: 100%; margin-top: 6px; padding: 12px; font: inherit; background: #060b18; color: #e8e8e8; border: 1px solid #465573; border-radius: 6px; }
-    .admin-panel button, footer button { padding: 10px 18px; background: #f6d365; color: #060b18; border: 0; border-radius: 6px; font: inherit; cursor: pointer; margin: 8px 8px 8px 0; }
-    button:disabled { opacity: .55; cursor: wait; }
-    .notice { max-width: 720px; margin: 16px auto; padding: 0 20px; color: #b5c1d5; }
-    #preview { max-width: 100%; max-height: 220px; margin: 16px 0; }
-    @media (max-width: 640px) { .admin-panel { margin: 16px; padding: 20px; } }
+    .section-head{
+      display:flex;
+      align-items:end;
+      justify-content:space-between;
+      gap:24px;
+      margin-bottom:32px
+    }
+    .section-head h2{
+      font:400 34px/1.3 var(--serif);
+      margin:0
+    }
+    .section-head h2 span{
+      font:italic 22px Georgia,serif;
+      color:var(--muted);
+      margin-left:18px
+    }
+    .collection-count{
+      font-size:13px;
+      color:var(--muted);
+      white-space:nowrap
+    }
+    .tools{
+      display:flex;
+      gap:24px;
+      justify-content:space-between;
+      align-items:start;
+      border-top:1px solid var(--line);
+      padding-top:20px;
+      margin-bottom:32px
+    }
+    .filters{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap
+    }
+    .filter{
+      font-size:14px;
+      color:#687169;
+      border:1px solid transparent;
+      border-radius:2px;
+      background:transparent;
+      padding:8px 16px;
+      max-width:100%;
+      overflow-wrap:anywhere
+    }
+    .filter:hover{
+      border-color:var(--line);
+      color:var(--ink)
+    }
+    .filter[aria-pressed="true"]{
+      color:var(--paper);
+      background:var(--navy)
+    }
+    .search{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:190px;
+      width:230px;
+      border-bottom:1px solid #a6aca5;
+      padding:7px 0;
+      color:var(--muted)
+    }
+    .search input{
+      border:0;
+      background:none;
+      min-width:0;
+      width:100%;
+      font-size:14px;
+      color:var(--ink);
+      outline:none
+    }
+    .search:focus-within{
+      border-color:var(--ink)
+    }
+    .search svg{
+      width:18px;
+      flex-shrink:0
+    }
+    .status{
+      font-size:14px;
+      color:var(--muted);
+      margin:12px 0;
+      overflow-wrap:anywhere
+    }
+    .status:empty{
+      display:none
+    }
+    .status.error{
+      color:#aa3830
+    }
+    .works-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:48px 32px
+    }
+    .card{
+      min-width:0
+    }
+    .artwork{
+      display:block;
+      border:0;
+      padding:0;
+      width:100%;
+      background:#e5e6df;
+      overflow:hidden;
+      position:relative;
+      aspect-ratio:4/3
+    }
+    .artwork img{
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      display:block;
+      transition:transform .6s
+    }
+    .artwork:hover img{
+      transform:scale(1.025)
+    }
+    .artwork .view-label{
+      position:absolute;
+      right:16px;
+      bottom:16px;
+      background:#f9f8f1e8;
+      padding:7px 13px;
+      font-size:12px;
+      letter-spacing:.06em;
+      opacity:0;
+      transform:translateY(4px);
+      transition:.25s
+    }
+    .artwork:hover .view-label,.artwork:focus-visible .view-label{
+      opacity:1;
+      transform:none
+    }
+    .placeholder{
+      aspect-ratio:4/3;
+      background:var(--navy-light);
+      color:#d8c498;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-direction:column;
+      padding:32px;
+      text-align:center;
+      position:relative
+    }
+    .placeholder:before{
+      content:"";
+      position:absolute;
+      inset:22px;
+      border:1px solid #b7a07530;
+      pointer-events:none
+    }
+    .placeholder strong{
+      font:400 clamp(22px,2.3vw,32px)/1.6 var(--serif);
+      max-width:100%;
+      overflow-wrap:anywhere
+    }
+    .placeholder span{
+      margin-top:12px;
+      font-size:12px;
+      letter-spacing:.12em;
+      color:#9da9ac
+    }
+    .card-info{
+      padding-top:18px
+    }
+    .card-meta{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:16px;
+      font-size:12px;
+      letter-spacing:.07em;
+      color:var(--muted)
+    }
+    .card-meta span{
+      overflow-wrap:anywhere
+    }
+    .edit-button{
+      background:none;
+      border:0;
+      color:#816638;
+      padding:0 2px;
+      font-size:13px
+    }
+    .card h3{
+      font:400 25px/1.5 var(--serif);
+      margin:7px 0;
+      overflow-wrap:anywhere
+    }
+    .card p{
+      margin:8px 0 0;
+      color:var(--muted);
+      font-size:14px;
+      max-width:580px;
+      white-space:pre-wrap;
+      overflow-wrap:anywhere
+    }
+    .empty{
+      padding:70px 20px;
+      text-align:center;
+      border:1px solid var(--line);
+      color:var(--muted);
+      grid-column:1/-1
+    }
+    .empty strong{
+      display:block;
+      font:26px var(--serif);
+      color:var(--ink);
+      margin-bottom:10px
+    }
+    footer{
+      background:var(--navy);
+      color:#b6bdc0
+    }
+    .footer-inner{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:38px 0;
+      gap:24px;
+      font-size:12px
+    }
+    .footer-title{
+      font:italic 26px Georgia,serif;
+      color:#d8c498;
+      margin:0 0 6px
+    }
+    .footer-note{
+      margin:0
+    }
+    .footer-actions{
+      display:flex;
+      gap:24px;
+      align-items:center
+    }
+    dialog{
+      border:0;
+      padding:0;
+      color:var(--ink);
+      background:var(--white);
+      max-height:90dvh
+    }
+    dialog::backdrop{
+      background:#06101bbd;
+      backdrop-filter:blur(5px)
+    }
+    .admin-dialog{
+      width:min(760px,calc(100% - 32px));
+      border-radius:8px;
+      box-shadow:0 25px 90px #0004
+    }
+    .dialog-top{
+      position:sticky;
+      top:0;
+      background:var(--white);
+      z-index:2;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:24px 30px;
+      border-bottom:1px solid var(--line);
+      gap:20px
+    }
+    .dialog-top h2{
+      font:26px var(--serif);
+      margin:0
+    }
+    .dialog-top .eyebrow{
+      font-size:10px;
+      margin:0 0 5px;
+      color:#846c45
+    }
+    .icon-close{
+      border:1px solid var(--line);
+      background:none;
+      width:38px;
+      height:38px;
+      border-radius:50%;
+      font:24px Arial;
+      flex-shrink:0
+    }
+    .admin-body{
+      padding:26px 30px 30px
+    }
+    .intro{
+      font-size:14px;
+      color:var(--muted);
+      margin:0 0 24px
+    }
+    .form-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:18px
+    }
+    .field{
+      display:block;
+      font-size:14px;
+      margin:0 0 20px
+    }
+    .field>span{
+      display:block;
+      margin-bottom:8px
+    }
+    .field small{
+      display:block;
+      margin-top:6px;
+      color:var(--muted);
+      font-size:12px
+    }
+    .field input,.field select,.field textarea{
+      display:block;
+      width:100%;
+      background:#fff;
+      border:1px solid #cfd3cc;
+      border-radius:3px;
+      padding:11px 12px;
+      font-size:15px;
+      color:var(--ink)
+    }
+    .field textarea{
+      resize:vertical;
+      min-height:100px
+    }
+    .button{
+      border:1px solid var(--navy);
+      background:var(--navy);
+      color:var(--paper);
+      padding:11px 20px;
+      border-radius:3px;
+      font-size:14px
+    }
+    .button.secondary{
+      color:var(--ink);
+      border-color:#bfc7c2;
+      background:none
+    }
+    .button.danger{
+      color:#a74337;
+      border-color:#d8b8ad;
+      background:none
+    }
+    .button:hover{
+      filter:brightness(1.15)
+    }
+    .admin-toolbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      margin-bottom:25px
+    }
+    .tabs{
+      display:flex;
+      border-bottom:1px solid var(--line);
+      margin-bottom:24px;
+      gap:24px
+    }
+    .tabs button{
+      border:0;
+      border-bottom:2px solid transparent;
+      padding:10px 0;
+      background:none;
+      color:var(--muted);
+      font-size:14px
+    }
+    .tabs button[aria-pressed="true"]{
+      border-color:var(--ink);
+      color:var(--ink)
+    }
+    .upload-area{
+      border:1px dashed #9ca99e;
+      padding:20px;
+      background:#eeefe8;
+      border-radius:3px;
+      margin-bottom:20px
+    }
+    .upload-area .field{
+      margin:0
+    }
+    .upload-area input{
+      padding:0;
+      border:0;
+      background:none;
+      font-size:13px
+    }
+    .upload-area input::file-selector-button{
+      border:1px solid #adb6ad;
+      padding:8px 12px;
+      background:var(--white);
+      color:var(--ink);
+      border-radius:3px;
+      margin-right:12px;
+      font:inherit;
+      cursor:pointer
+    }
+    .upload-preview{
+      width:100%;
+      max-height:230px;
+      object-fit:contain;
+      display:block;
+      margin:18px 0 0
+    }
+    .file-info{
+      font-size:13px;
+      color:#4c6654;
+      margin:12px 0 0
+    }
+    .form-actions{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:14px;
+      border-top:1px solid var(--line);
+      padding-top:22px
+    }
+    .form-actions>div{
+      display:flex;
+      gap:10px
+    }
+    .trash-item{
+      border-bottom:1px solid var(--line);
+      padding:16px 0;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px
+    }
+    .trash-item p{
+      margin:0;
+      font-size:14px;
+      overflow-wrap:anywhere
+    }
+    .trash-item small{
+      color:var(--muted);
+      display:block;
+      font-size:12px
+    }
+    .trash-item button{
+      flex-shrink:0
+    }
+    .confirm-dialog{
+      width:min(420px,calc(100% - 32px));
+      border-radius:6px;
+      padding:28px
+    }
+    .confirm-dialog h2{
+      font:26px var(--serif);
+      margin:0 0 16px
+    }
+    .confirm-dialog p{
+      overflow-wrap:anywhere;
+      color:var(--muted);
+      font-size:14px
+    }
+    .confirm-actions{
+      display:flex;
+      justify-content:end;
+      gap:12px;
+      margin-top:24px
+    }
+    .lightbox{
+      width:100vw;
+      height:100dvh;
+      max-width:100vw;
+      max-height:100dvh;
+      background:#08121cf5;
+      color:var(--paper)
+    }
+    .lightbox-layout{
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      padding:70px 24px 24px;
+      gap:16px
+    }
+    .lightbox img{
+      flex:1;
+      min-height:0;
+      width:100%;
+      object-fit:contain
+    }
+    .lightbox h2{
+      font:20px var(--serif);
+      margin:0;
+      text-align:center
+    }
+    .lightbox p{
+      font-size:12px;
+      color:#a9b3b9;
+      margin:4px 0 0;
+      text-align:center
+    }
+    .lightbox .icon-close{
+      position:absolute;
+      right:24px;
+      top:20px;
+      color:var(--paper);
+      border-color:#ffffff50
+    }
+    .lightbox a{
+      font-size:13px;
+      text-decoration:underline;
+      text-underline-offset:4px
+    }
+    .sr-only{
+      position:absolute;
+      width:1px;
+      height:1px;
+      padding:0;
+      margin:-1px;
+      overflow:hidden;
+      clip:rect(0,0,0,0);
+      white-space:nowrap;
+      border:0
+    }
+    @media(min-width:1500px){
+      .hero{
+        padding:110px 0 100px
+      }
+    }
+    @media(max-width:900px){
+      .wrap{
+        width:calc(100% - 56px)
+      }
+      .hero{
+        gap:32px;
+        padding:66px 0
+      }
+      .hero h1{
+        font-size:52px
+      }
+      .hero-side .english{
+        font-size:46px
+      }
+      .works-grid{
+        gap:34px 22px
+      }
+      .nav{
+        height:80px
+      }
+    }
+    @media(max-width:600px){
+      .wrap{
+        width:calc(100% - 40px)
+      }
+      .nav{
+        height:76px
+      }
+      .nav-links{
+        gap:18px
+      }
+      .brand{
+        font-size:12px;
+        gap:9px
+      }
+      .brand-mark{
+        width:29px;
+        height:29px;
+        font-size:19px
+      }
+      .hero{
+        display:block;
+        padding:50px 0 40px
+      }
+      .hero h1{
+        font-size:46px;
+        line-height:1.35
+      }
+      .eyebrow{
+        font-size:10px;
+        margin-bottom:22px
+      }
+      .hero-side{
+        border:0;
+        padding:0;
+        margin-top:28px
+      }
+      .hero-side .english{
+        display:none
+      }
+      .hero-side p:last-child{
+        font-size:13px;
+        max-width:100%
+      }
+      .hero-bottom{
+        font-size:9px;
+        letter-spacing:.06em;
+        padding:17px 0
+      }
+      .works{
+        padding:38px 0 48px
+      }
+      .section-head{
+        margin-bottom:22px
+      }
+      .section-head h2{
+        font-size:28px
+      }
+      .section-head h2 span{
+        display:block;
+        font-size:16px;
+        margin:7px 0 0
+      }
+      .tools{
+        flex-direction:column;
+        gap:18px;
+        margin-bottom:25px
+      }
+      .filters{
+        gap:5px
+      }
+      .filter{
+        padding:7px 12px;
+        font-size:13px
+      }
+      .search{
+        width:100%
+      }
+      .works-grid{
+        grid-template-columns:1fr;
+        gap:32px
+      }
+      .card h3{
+        font-size:24px
+      }
+      .card-info{
+        padding-top:14px
+      }
+      .footer-inner{
+        align-items:start;
+        flex-direction:column;
+        padding:28px 0
+      }
+      .footer-actions{
+        width:100%;
+        justify-content:space-between
+      }
+      .dialog-top{
+        padding:20px
+      }
+      .admin-body{
+        padding:22px 20px
+      }
+      .form-grid{
+        grid-template-columns:1fr;
+        gap:0
+      }
+      .form-actions{
+        flex-wrap:wrap
+      }
+      .form-actions>div{
+        flex-wrap:wrap
+      }
+      .button{
+        padding:10px 15px
+      }
+      .admin-toolbar{
+        align-items:start
+      }
+      .admin-dialog{
+        max-height:94dvh
+      }
+      .placeholder strong{
+        font-size:24px
+      }
+      .lightbox-layout{
+        padding:70px 14px 20px
+      }
+    }
+    @media(prefers-reduced-motion:reduce){
+      html{
+        scroll-behavior:auto
+      }
+      *,*:before,*:after{
+        transition:none!important
+      }
+    }
   </style>
 </head>
 <body>
-
-  <!-- ── Hero with animated starfield ── -->
-  <header class="hero" id="hero">
-    <canvas id="starfield"></canvas>
-    <div class="hero-content">
-      <h1>作 品 集</h1>
-      <p>节目单 · 平面设计 · 概念设计 · PPT · 摄影</p>
-      <hr class="hero-divider" />
-    </div>
-  </header>
-
-  <!-- ── Category Filter Tabs ── -->
-  <nav class="filter-bar" id="filterBar" aria-label="作品分类">
-    <button class="filter-btn active" data-category="all" aria-pressed="true">全部</button>
-    <button class="filter-btn" data-category="节目单">节目单</button>
-    <button class="filter-btn" data-category="海报">海报</button>
-    <button class="filter-btn" data-category="概念设计">概念设计</button>
-    <button class="filter-btn" data-category="PPT">PPT</button>
-    <button class="filter-btn" data-category="摄影">摄影</button>
-  </nav>
-
-  <p id="backendStatus" class="notice" role="status" aria-live="polite"></p>
-  <section id="adminPanel" class="admin-panel" hidden aria-label="作品管理">
-    <h2>作品管理</h2>
-    <form id="loginForm">
-      <label>邮箱<input name="email" type="email" autocomplete="username" required></label>
-      <label>密码<input name="password" type="password" autocomplete="current-password" required></label>
-      <button type="submit">登录</button>
-    </form>
-    <form id="workForm" hidden>
-      <label>操作<select name="project"><option value="">新增作品</option></select></label>
-      <label>作品标题<input name="title" required maxlength="80"></label>
-      <label>分类<select name="category"><option>节目单</option><option>海报</option><option>概念设计</option><option>PPT</option><option>摄影</option></select></label>
-      <label>作品介绍<textarea name="description" maxlength="1000" rows="3"></textarea></label>
-      <label>图片（JPG / PNG / WebP，最大 8 MB）<input name="image" type="file" accept="image/jpeg,image/png,image/webp"></label>
-      <p>新增作品需要图片；编辑已有作品时，不选图片会保留原图。</p>
-      <img id="preview" alt="待上传图片预览" hidden>
-      <button type="submit">发布作品</button><button type="button" id="logoutButton">退出登录</button>
-    </form>
-    <p id="adminStatus" role="status" aria-live="polite"></p>
-  </section>
-  <!-- ── Works Grid ── -->
-  <main class="works-grid" id="worksGrid" aria-label="Works 作品">
-    <article class="card" data-category="节目单">
-      <div class="card-img-wrap" data-image="images/singer-contest-program-2026.jpg">
-        <div class="card-placeholder"><strong>十佳歌手节目单 2026</strong><span>图片待补充</span></div>
-      </div>
-      <div class="card-body"><span class="card-category">节目单</span><h2 class="card-title">十佳歌手节目单 2026</h2></div>
-    </article>
-    <article class="card" data-category="概念设计">
-      <div class="card-img-wrap" data-image="images/misty-hangzhou-poker.jpg">
-        <div class="card-placeholder"><strong>烟雨杭州扑克概念</strong><span>图片待补充</span></div>
-      </div>
-      <div class="card-body"><span class="card-category">概念设计</span><h2 class="card-title">烟雨杭州扑克概念</h2></div>
-    </article>
-    <article class="card" data-category="海报">
-      <div class="card-img-wrap" data-image="images/birthday-raffle-ticket.jpg">
-        <div class="card-placeholder"><strong>生日抽奖券</strong><span>图片待补充</span></div>
-      </div>
-      <div class="card-body"><span class="card-category">海报</span><h2 class="card-title">生日抽奖券</h2></div>
-    </article>
-    <article class="card" data-category="概念设计">
-      <div class="card-img-wrap" data-image="images/college-emblem-redraw.jpg">
-        <div class="card-placeholder"><strong>院徽重绘</strong><span>图片待补充</span></div>
-      </div>
-      <div class="card-body"><span class="card-category">概念设计</span><h2 class="card-title">院徽重绘</h2></div>
-    </article>
-    <article class="card" data-category="PPT">
-      <div class="card-img-wrap" data-image="images/information-huazhang-ppt.jpg">
-        <div class="card-placeholder"><strong>信息华章 PPT</strong><span>图片待补充</span></div>
-      </div>
-      <div class="card-body"><span class="card-category">PPT</span><h2 class="card-title">信息华章 PPT</h2></div>
-    </article>
-    <article class="card" data-category="摄影">
-      <div class="card-img-wrap" data-image="images/photography.jpg">
-        <div class="card-placeholder"><strong>摄影作品</strong><span>图片待补充</span></div>
-      </div>
-      <div class="card-body"><span class="card-category">摄影</span><h2 class="card-title">摄影作品</h2></div>
-    </article>
-  </main>
-
-  <!-- ── Lightbox ── -->
-  <div class="lightbox-overlay" id="lightbox" role="dialog" aria-modal="true" aria-label="作品大图" tabindex="-1">
-    <button class="lightbox-close" id="lightboxClose" aria-label="关闭大图">✕</button>
-    <img id="lightboxImg" alt="" />
-    <div class="lightbox-title" id="lightboxTitle"></div>
+  <div class="site-top" id="top">
+    <nav class="nav wrap" aria-label="主导航"><a class="brand" href="#top"><span class="brand-mark" aria-hidden="true">P</span>PORTFOLIO / 作品集</a><div class="nav-links"><a href="#works">浏览作品</a><button class="text-button" data-open-admin>管理</button></div></nav>
+    <header class="wrap"><div class="hero"><div><p class="eyebrow">Visual Design & Photography</p><h1>把想法，<br>留在<em>画面里。</em></h1></div><div class="hero-side"><p class="english" lang="en">Selected<br>works.</p><p>关于设计、影像与日常观察。<br>在这里，记录每一次创作。</p></div></div><div class="hero-bottom"><span>独立创作 · 持续记录</span><span>DESIGN / IMAGE / EXPLORATION</span></div></header>
   </div>
-
-
-
-
-  <footer>
-    <button id="adminToggle" aria-expanded="false" aria-controls="adminPanel">管理作品</button>
-    <p>&copy; 2026 作品集 · All rights reserved.</p>
-  </footer>
-
-<script type="module">
-  import { backendConfig } from './config.js';
-  import { PortfolioAPI } from './backend-client.js';
-  // ════════════════════════════════════════
-  //  Animated Starfield (Canvas)
-  // ════════════════════════════════════════
-  (function initStarfield() {
-    const canvas = document.getElementById("starfield");
-    const ctx    = canvas.getContext("2d");
-    const hero   = document.getElementById("hero");
-    let stars = [];
-    const STAR_COUNT = 160;
-
-    function resize() {
-      const rect = hero.getBoundingClientRect();
-      canvas.width  = rect.width  * devicePixelRatio;
-      canvas.height = rect.height * devicePixelRatio;
-      canvas.style.width  = rect.width  + "px";
-      canvas.style.height = rect.height + "px";
-      ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
-    }
-
-    function seed() {
-      const w = canvas.width / devicePixelRatio;
-      const h = canvas.height / devicePixelRatio;
-      stars = [];
-      for (let i = 0; i < STAR_COUNT; i++) {
-        stars.push({
-          x: Math.random() * w,
-          y: Math.random() * h,
-          r: Math.random() * 1.4 + 0.3,
-          alpha: Math.random(),
-          speed: Math.random() * 0.005 + 0.002,
-          phase: Math.random() * Math.PI * 2
-        });
-      }
-    }
-
-    let t = 0;
-    function draw() {
-      const w = canvas.width / devicePixelRatio;
-      const h = canvas.height / devicePixelRatio;
-      ctx.clearRect(0, 0, w, h);
-      t += 1;
-      for (const s of stars) {
-        const a = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(t * s.speed + s.phase));
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(220, 200, 160, ${a})`;
-        ctx.fill();
-      }
-      requestAnimationFrame(draw);
-    }
-
-    resize(); seed(); draw();
-    window.addEventListener("resize", () => { resize(); seed(); });
-  })();
-
-  // All artwork is loaded from repository files, relative to this page.
-  const grid = document.getElementById("worksGrid");
-  const filterBar = document.getElementById("filterBar");
-  const lightbox = document.getElementById("lightbox");
-  const lightboxImg = document.getElementById("lightboxImg");
-  const lightboxTitle = document.getElementById("lightboxTitle");
-  const lightboxClose = document.getElementById("lightboxClose");
-  let previousFocus;
-
-  function loadImages() { grid.querySelectorAll("[data-image]").forEach(wrap => {
-    const title = wrap.closest(".card").querySelector(".card-title").textContent;
-    const img = new Image();
-    img.className = "card-img";
-    img.alt = title;
-    img.onload = () => {
-      const button = document.createElement("button");
-      button.className = "image-button";
-      button.setAttribute("aria-label", "查看大图：" + title);
-      button.append(img);
-      button.addEventListener("click", () => {
-        previousFocus = button;
-        lightboxImg.src = img.src;
-        lightboxImg.alt = title;
-        lightboxTitle.textContent = title;
-        lightbox.classList.add("open");
-        document.body.style.overflow = "hidden";
-        lightboxClose.focus();
-      });
-      wrap.replaceChildren(button);
-    };
-    // Missing artwork keeps the existing placeholder visible.
-    img.onerror = () => { img.remove(); };
-    img.src = wrap.dataset.image;
-  }); }
-  loadImages();
-
-  filterBar.addEventListener("click", event => {
-    const button = event.target.closest(".filter-btn");
-    if (!button) return;
-    filterBar.querySelectorAll(".filter-btn").forEach(item => {
-      item.classList.toggle("active", item === button);
-      item.setAttribute("aria-pressed", String(item === button));
-    });
-    applyFilter();
-  });
-  filterBar.querySelectorAll(".filter-btn:not(.active)").forEach(button => button.setAttribute("aria-pressed", "false"));
-
-  function applyFilter() {
-    const category = filterBar.querySelector('.active').dataset.category;
-    grid.querySelectorAll('.card').forEach(card => { card.hidden = category !== 'all' && card.dataset.category !== category; });
-  }
-  const api = backendConfig.url && backendConfig.publicKey ? new PortfolioAPI(backendConfig) : null;
-  const panel = document.getElementById('adminPanel');
-  const toggle = document.getElementById('adminToggle');
-  const login = document.getElementById('loginForm');
-  const form = document.getElementById('workForm');
-  const status = document.getElementById('adminStatus');
-  const backendStatus = document.getElementById('backendStatus');
-  if (!api) login.querySelectorAll('input,button').forEach(element => element.disabled = true);
-  let projects = [];
-  let busy = false;
-  let previewURL;
-  toggle.addEventListener('click', () => {
-    panel.hidden = !panel.hidden;
-    toggle.setAttribute('aria-expanded', String(!panel.hidden));
-    if (!api) status.textContent = '管理功能尚未连接，请先完成后端配置。';
-    if (!panel.hidden) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
-  function setBusy(value) {
-    busy = value;
-    panel.querySelectorAll('input,select,textarea,button').forEach(el => el.disabled = value);
-  }
-  function clearPreview() {
-    if (previewURL) URL.revokeObjectURL(previewURL);
-    previewURL = null;
-    const preview = document.getElementById('preview');
-    preview.removeAttribute('src'); preview.hidden = true;
-  }
-  function selectProject() {
-    const project = projects.find(p => p.id === form.elements.project.value);
-    form.elements.title.value = project?.title || '';
-    form.elements.category.value = project?.category || '节目单';
-    form.elements.description.value = project?.description || '';
-    form.elements.image.value = ''; clearPreview();
-  }
-  form.elements.project.addEventListener('change', selectProject);
-  form.elements.image.addEventListener('change', () => {
-    clearPreview();
-    const file = form.elements.image.files[0];
-    if (!file) return;
-    if (!['image/jpeg','image/png','image/webp'].includes(file.type) || file.size > 8388608) {
-      status.textContent = '请选择 8 MB 以内的 JPG、PNG 或 WebP 图片'; form.elements.image.value = ''; return;
-    }
-    previewURL = URL.createObjectURL(file);
-    const preview = document.getElementById('preview'); preview.src = previewURL; preview.hidden = false;
-  });
-  async function refreshProjects() {
-    const rows = await api.list();
-    projects = rows;
-    const cards = rows.map(project => {
-      const card = document.createElement('article'); card.className = 'card'; card.dataset.category = project.category;
-      const wrap = document.createElement('div'); wrap.className = 'card-img-wrap';
-      const imageURL = api.imageURL(project);
-      // Only trusted storage URLs or repository image paths may become image sources.
-      if (imageURL && (imageURL.startsWith(api.url + '/storage/v1/object/public/portfolio/') || /^images\/[a-zA-Z0-9._-]+$/.test(imageURL))) wrap.dataset.image = imageURL;
-      const placeholder = document.createElement('div'); placeholder.className = 'card-placeholder';
-      const heading = document.createElement('strong'); heading.textContent = project.title;
-      const hint = document.createElement('span'); hint.textContent = '图片待补充'; placeholder.append(heading, hint); wrap.append(placeholder);
-      const body = document.createElement('div'); body.className = 'card-body';
-      const category = document.createElement('span'); category.className = 'card-category'; category.textContent = project.category;
-      const title = document.createElement('h2'); title.className = 'card-title'; title.textContent = project.title;
-      const desc = document.createElement('p'); desc.className = 'card-desc'; desc.textContent = project.description;
-      body.append(category, title, desc); card.append(wrap, body); return card;
-    });
-    grid.replaceChildren(...cards); loadImages(); applyFilter();
-    form.elements.project.replaceChildren(new Option('新增作品', ''), ...rows.map(p => new Option(p.title, p.id)));
-  }
-  login.addEventListener('submit', async event => {
-    event.preventDefault(); if (!api || busy) return;
-    setBusy(true); status.textContent = '正在登录…';
-    try {
-      await api.login(login.elements.email.value.trim(), login.elements.password.value);
-      await refreshProjects(); login.reset(); login.hidden = true; form.hidden = false; status.textContent = '已登录，可以发布作品。';
-    } catch (error) { status.textContent = error.message; }
-    finally { setBusy(false); }
-  });
-  document.getElementById('logoutButton').addEventListener('click', async () => {
-    if (busy) return; setBusy(true);
-    try { await api.logout(); status.textContent = '已退出登录'; }
-    catch { status.textContent = '本机已退出；服务器会话撤销失败，请稍后重试。'; }
-    finally { form.reset(); clearPreview(); form.hidden = true; login.hidden = false; setBusy(false); }
-  });
-  form.addEventListener('submit', async event => {
-    event.preventDefault(); if (!api || busy) return;
-    const values = { id: form.elements.project.value, title: form.elements.title.value, category: form.elements.category.value, description: form.elements.description.value, file: form.elements.image.files[0] };
-    setBusy(true); status.textContent = '正在上传并发布，请勿关闭页面…';
-    let published = false;
-    try {
-      const saved = await api.save(values);
-      if (!saved?.length) throw new Error('作品未保存，请检查管理员权限后重试');
-      published = true; form.reset(); clearPreview(); await refreshProjects(); status.textContent = '发布成功，访客刷新页面即可看到作品。';
-    } catch (error) { status.textContent = published ? '发布已成功，但列表刷新失败。请刷新页面，不要重复发布。' : error.message; }
-    finally { setBusy(false); }
-  });
-  if (api) {
-    backendStatus.textContent = '正在加载作品…';
-    refreshProjects().then(() => { backendStatus.textContent = projects.length ? '' : '暂时还没有作品。'; })
-      .catch(() => { backendStatus.textContent = '在线作品暂时加载失败，当前展示静态作品。请刷新重试。'; });
-  }
-  window.addEventListener('beforeunload', event => { if (busy) { event.preventDefault(); event.returnValue = ''; } });
-
-  function closeLightbox() {
-    lightbox.classList.remove("open");
-    lightboxImg.removeAttribute("src");
-    document.body.style.overflow = "";
-    previousFocus?.focus();
-  }
-  lightboxClose.addEventListener("click", closeLightbox);
-  lightbox.addEventListener("click", event => { if (event.target === lightbox) closeLightbox(); });
-  document.addEventListener("keydown", event => {
-    if (!lightbox.classList.contains("open")) return;
-    if (event.key === "Escape") closeLightbox();
-    if (event.key === "Tab") { event.preventDefault(); lightboxClose.focus(); }
-  });
-</script>
-
-</body>
-</html>
+  <main class="works wrap" id="works"><div class="section-head"><h2>作品选集 <span lang="en">The collection</span></h2><span class="collection-count" id="count">06 件作品</span></div><div class="tools"><nav class="filters" id="filters" aria-label="作品分类"><button class="filter" data-category="" aria-pressed="true">全部</button></nav><label class="search"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><span class="sr-only">搜索作品</span><input id="search" type="search" placeholder="搜索标题、分类或介绍"></label></div><p class="status" id="backendStatus" role="status" aria-live="polite"></p><div class="works-grid" id="grid">
+<article class="card"><div class="placeholder"><strong>十佳歌手节目单 2026</strong><span>图片待补充</span></div><div class="card-info"><div class="card-meta">节目单</div><h3>十佳歌手节目单 2026</h3></div></article>
+<article class="card"><div class="placeholder"><strong>烟雨杭州扑克概念</strong><span>图片待补充</span></div><div class="card-info"><div class="card-meta">概念设计</div><h3>烟雨杭州扑克概念</h3></div></article>
+<article class="card"><div class="placeholder"><strong>生日抽奖券</strong><span>图片待补充</span></div><div class="card-info"><div class="card-meta">海报</div><h3>生日抽奖券</h3></div></article>
+<article class="card"><div class="placeholder"><strong>院徽重绘</strong><span>图片待补充</span></div><div class="card-info"><div class="card-meta">概念设计</div><h3>院徽重绘</h3></div></article>
+<article class="card"><div class="placeholder"><strong>信息华章 PPT</strong><span>图片待补充</span></div><div class="card-info"><div class="card-meta">PPT</div><h3>信息华章 PPT</h3></div></article>
+<article class="card"><div class="placeholder"><strong>摄影作品</strong><span>图片待补充</span></div><div class="card-info"><div class="card-meta">摄影</div><h3>摄影作品</h3></div></article>
+  </div><noscript><p class="status">开启 JavaScript 后可查看最新作品与完整图片。</p></noscript></main>
+  <footer><div class="wrap footer-inner"><div><p class="footer-title">A work in progress.</p><p class="footer-note">创作未完，记录继续。</p></div><div class="footer-actions"><span>© 2026 个人作品集</span><button class="text-button" data-open-admin>管理作品</button><a href="#top">回到顶部</a></div></div></footer>
+  <dialog id="adminDialog" class="admin-dialog" aria-labelledby="adminHeading"><div class="dialog-top"><div><p class="eyebrow">Portfolio Studio</p><h2 id="adminHeading">作品管理</h2></div><button class="icon-close" id="adminClose" aria-label="关闭作品管理">×</button></div><div class="admin-body">
+    <form id="loginForm"><p class="intro">登录后，整理作品、添加图片，记录新的创作。</p><label class="field"><span>邮箱</span><input name="email" type="email" autocomplete="username" required></label><label class="field"><span>密码</span><input name="password" type="password" autocomplete="current-password" required></label><button class="button" type="submit">登录工作室</button></form>
+    <section id="studio" hidden><div class="admin-toolbar"><p class="intro" style="margin:0">你的作品，由你编排。</p><button class="text-button" id="logoutButton">退出登录</button></div><div class="tabs" role="group" aria-label="管理视图"><button id="editTab" aria-pressed="true">发布与编辑</button><button id="trashTab" aria-pressed="false">回收站</button></div>
+      <form id="workForm"><label class="field"><span>选择操作</span><select name="project"><option value="">新增作品</option></select></label><div class="form-grid"><label class="field"><span>作品标题</span><input name="title" maxlength="80" required placeholder="给这件作品起个名字"></label><label class="field"><span>作品分类</span><input name="category" list="categoryOptions" maxlength="30" required placeholder="选择已有分类，或输入新分类"><datalist id="categoryOptions"></datalist><small>新分类会在作品发布后出现在首页。</small></label></div><label class="field"><span>作品介绍</span><textarea name="description" maxlength="1000" rows="3" placeholder="想法、背景，或值得留意的细节。"></textarea></label><div class="upload-area"><label class="field"><span>作品图片</span><input name="image" type="file" accept="image/jpeg,image/png,image/webp"><small>支持最大 50 MB 的 JPG / PNG / WebP，自动优化后上传。编辑时不选图片会保留原图。</small></label><img id="preview" class="upload-preview" hidden alt="作品图片预览"><p class="file-info" id="fileInfo" aria-live="polite"></p></div><div class="form-actions"><button class="button danger" type="button" id="deleteButton" hidden>删除作品</button><div><button class="button secondary" type="button" id="resetButton">清空表单</button><button class="button" type="submit" id="publishButton">发布作品</button></div></div></form>
+      <section id="trashPanel" hidden aria-label="已删除作品"><p class="intro">删除的作品不再展示在首页，可在这里恢复。图片会保留，仍占用云存储空间。</p><div id="trashList"></div><button class="text-button" id="retryTrash">刷新回收站</button></section>
+    </section><p id="adminStatus" class="status" role="status" aria-live="polite"></p>
+  </div></dialog>
+  <dialog id="deleteDialog" class="confirm-dialog" aria-labelledby="deleteHeading"><h2 id="deleteHeading">删除这件作品？</h2><p id="deleteDescription"></p><p>作品会从首页移除，你可以在回收站恢复。</p><div class="confirm-actions"><button class="button secondary" id="cancelDelete">取消</button><button class="button danger" id="confirmDelete">移入回收站</button></div></dialog>
+  <dialog id="lightbox" class="lightbox" aria-labelledby="lightboxTitle"><button class="icon-close" id="lightboxClose" aria-label="关闭大图">×</button><div class="lightbox-layout"><img id="lightboxImage" alt=""><div><h2 id="lightboxTitle"></h2><p id="lightboxCategory"></p></div><a id="originalLink" target="_blank" rel="noopener">在新窗口查看图片</a></div></dialog>
+  <script type="module" src="app.js?v=20261126"></script>
+</body></html>
