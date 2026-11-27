@@ -6,11 +6,12 @@
 
 ### 交互动效（无需任何操作，零外部依赖）
 
-- 作品卡片：电脑端鼠标移动时轻微 3D 倾斜（最大约 ±5°），并有跟随鼠标的光泽反射；移开后柔和回正。触屏设备不倾斜。
-- 滚动渐显：作品卡片和联系方式进入视口时依次上浮出现；切换分类/搜索时已在屏幕内的卡片不会闪烁。
-- 首屏标题分行上浮入场；切换分类在支持的浏览器（Chrome / Edge / 新版 Safari）中平滑过渡。
-- 大图：打开时缩放淡入；翻页时旧图先变暗保留，新图加载完成后淡入，不再黑屏闪烁。
-- 系统开启「减弱动态效果」后所有动效自动关闭；动效脚本加载失败时内容也照常显示。实现见 `motion.js`。
+- 开场幕布转场：每次会话首次打开时播放约 1 秒的深蓝金线双页揭幕，随后首屏标题蒙版逐行滑出；点击屏幕或按 `Esc` 可随时跳过，页脚提供「重播开场」按钮。
+- 首屏互动氛围光场：深蓝首屏内置随鼠标缓随游走的暖金/深青双光晕、细腻胶片颗粒质感与低耗能 Canvas 漂浮光尘（滚出视口或切后台自动暂停渲染）。
+- 自定义画廊光标 + 磁吸交互：电脑端鼠标悬停作品卡片时平滑变为 `VIEW` 磨砂圆镜光标；导航、分类筛选与联系方式具备柔和磁吸弹性；打开弹窗或输入文字时自动还原系统指针。
+- 作品卡片与滚动运镜：顶部 2px 金线进度条 + 首屏景深缓退视差；卡片入场采用剪裁蒙版揭开 + Ken Burns 镜头微缩；悬停呈现大胆 3D 分层视差（最大 ±9° / ±7°）、动态反向阴影与双层金属光泽反射。
+- 分类切换与大图翻页：支持 View Transitions 平滑转场；大图翻页按翻页方向滑切进入，旧图变暗微退不黑屏闪烁。
+- 系统开启「减弱动态效果」后所有动效、幕布与光标自动关闭；实现见 `motion.js` 与 `motion-math.js`。
 
 ### 「关于我」升级步骤
 
@@ -108,7 +109,7 @@ export const backendConfig = {
 ### 4. 发布
 
 ```sh
-git add index.html app.js album.js image-processing.js motion.js profile.js about.js config.js backend-client.js backend package.json package-lock.json .gitignore tests README.md
+git add index.html app.js album.js image-processing.js motion-math.js motion.js profile.js about.js config.js backend-client.js backend package.json package-lock.json .gitignore tests README.md
 git commit -m "feat: add Supabase artwork management"
 git push origin main
 ```

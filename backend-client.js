@@ -1,5 +1,5 @@
-import { projectPages, pageURL, validatePages } from './album.js?v=20261127-motion';
-import { normalizeProfile, publicContacts } from './profile.js?v=20261127-motion';
+import { projectPages, pageURL, validatePages } from './album.js?v=20261127-cinema';
+import { normalizeProfile, publicContacts } from './profile.js?v=20261127-cinema';
 const missingProfileTable = error => ['PGRST205', '42P01'].includes(error?.code);
 const profileRow = row => ({ intro: typeof row?.intro === 'string' ? row.intro : '', contacts: publicContacts(row?.contacts) });
 export class PortfolioAPI {

@@ -1,9 +1,9 @@
 import { backendConfig } from './config.js';
-import { PortfolioAPI } from './backend-client.js?v=20261127-motion';
+import { PortfolioAPI } from './backend-client.js?v=20261127-cinema';
 import { prepareImage, formatSize } from './image-processing.js?v=20261126';
-import { MAX_PAGES, projectPages, pageURL, movePage, isMissingPlaceholder, countEffectivePages, mergeAddedPages } from './album.js?v=20261127-motion';
-import { initMotion, reveal, enableTilt, transition } from './motion.js?v=20261127-motion';
-import { renderAbout, createProfileEditor } from './about.js?v=20261127-motion';
+import { MAX_PAGES, projectPages, pageURL, movePage, isMissingPlaceholder, countEffectivePages, mergeAddedPages } from './album.js?v=20261127-cinema';
+import { initMotion, playIntro, initHeroAtmosphere, initCursor, enableMagnetic, initScrollChoreography, reveal, enableTilt, transition } from './motion.js?v=20261127-cinema';
+import { renderAbout, createProfileEditor } from './about.js?v=20261127-cinema';
 const $ = id => document.getElementById(id);
 const api = backendConfig.url && backendConfig.publicKey ? new PortfolioAPI(backendConfig) : null;
 const defaults = ['节目单','海报','概念设计','PPT','摄影'];
@@ -36,19 +36,21 @@ function openImage(project, index = 0) {
     button.setAttribute('aria-label', `查看第 ${i+1} 页${page.caption ? '：'+page.caption : ''}`);
     const src = pageURL(page, api?.url);
     if (src) { const img = new Image(); img.src = src; img.alt = ''; img.loading = 'lazy'; img.onerror = () => img.remove(); button.append(img); }
-    button.append(el('span','',String(i+1))); button.addEventListener('click', () => { viewingPage = i; renderPage(); }); return button;
+    button.append(el('span','',String(i+1))); button.addEventListener('click', () => { const dir = i > viewingPage ? 1 : i < viewingPage ? -1 : 0; viewingPage = i; renderPage(dir); }); return button;
   }));
-  renderPage(); $('lightbox').showModal();
+  renderPage(0); $('lightbox').showModal();
 }
-function renderPage() {
+function renderPage(direction = 0) {
   const token = ++pageToken;
   const pages = projectPages(viewingProject), page = pages[viewingPage], src = pageURL(page,api?.url);
-  const image = new Image(); image.id = 'lightboxImage'; image.className = 'page-enter'; image.alt = `${viewingProject.title} · ${page.caption || '第 '+(viewingPage+1)+' 页'}`;
-  // Keep the previous page on screen (dimmed) until the next one has loaded, so paging never flashes black.
+  const image = new Image(); image.id = 'lightboxImage';
+  image.className = direction > 0 ? 'slide-from-right' : direction < 0 ? 'slide-from-left' : 'page-enter';
+  image.alt = `${viewingProject.title} · ${page.caption || '第 '+(viewingPage+1)+' 页'}`;
+  // Keep the previous page on screen (dimmed and slightly shifted) until the next one loads.
   const show = message => { if (token !== pageToken) return; $('lightboxImage').replaceWith(image); $('pageLoadStatus').textContent = message; };
   $('pageLoadStatus').textContent = '';
   if (src) {
-    $('lightboxImage').classList.add('is-stale');
+    $('lightboxImage').classList.add(direction > 0 ? 'is-stale-next' : direction < 0 ? 'is-stale-prev' : 'is-stale');
     image.onload = () => show('');
     image.onerror = () => { image.hidden = true; show('这张图片暂时无法加载，可以切换其他页面。'); };
     image.src = src;
@@ -64,7 +66,7 @@ function stepPage(direction) {
   if (!viewingProject) return;
   const next = viewingPage + direction;
   if (next < 0 || next >= projectPages(viewingProject).length) return;
-  viewingPage = next; renderPage();
+  viewingPage = next; renderPage(direction);
 }
 function placeholder(project, unavailable = false) {
   const node = el('div','placeholder'); node.append(el('strong','',project.title),el('span','',unavailable ? '图片暂时无法加载' : '图片待补充')); return node;
@@ -224,7 +226,7 @@ admin.addEventListener('cancel', event => { if (busy || !allowDiscardAll()) even
 $('lightboxClose').addEventListener('click', () => $('lightbox').close());
 $('lightbox').addEventListener('close', () => {
   pageToken++;
-  const image = $('lightboxImage'); image.removeAttribute('src'); image.alt = ''; image.classList.remove('is-stale');
+  const image = $('lightboxImage'); image.removeAttribute('src'); image.alt = ''; image.classList.remove('is-stale', 'is-stale-next', 'is-stale-prev');
   $('pageThumbnails').replaceChildren(); viewingProject = null;
 });
 $('previousPage').addEventListener('click', () => stepPage(-1));
@@ -329,6 +331,7 @@ $('trashTab').addEventListener('click', () => { showStudioTab('trash'); loadTras
 $('editTab').addEventListener('click', () => { showStudioTab('edit'); notify(''); });
 $('profileTab').addEventListener('click', () => { showStudioTab('profile'); notify(''); });
 $('retryTrash').addEventListener('click',loadTrash);
+$('replayIntro')?.addEventListener('click', () => { window.scrollTo({ top: 0, behavior: 'instant' }); playIntro({ force: true }); });
 window.addEventListener('beforeunload', event => { if (busy || dirty || profileEditor?.isDirty()) { event.preventDefault(); event.returnValue = ''; } });
 async function loadProfile() {
   if (!api) { renderAbout(null, reveal); return; }
@@ -341,7 +344,7 @@ profileEditor = createProfileEditor({
   api, notify, setBusy, isBusy: () => busy, onAuthLost: requireLoginIfExpired,
   onSaved: row => { profile = row; renderAbout(profile, nodes => reveal(nodes, { immediate:true })); $('profileNotice').hidden = true; }
 });
-initMotion(); enableTilt($('grid'));
+initMotion(); playIntro(); initHeroAtmosphere($('top'), $('heroCanvas')); initCursor(); enableMagnetic(document.body); initScrollChoreography(); enableTilt($('grid'));
 renderFilters(); renderGallery({ immediate:false });
 loadProfile();
 if (api) {

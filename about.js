@@ -1,4 +1,4 @@
-import { PLATFORMS, MAX_CONTACTS, MAX_INTRO, normalizeProfile, contactHref, contactText, publicContacts } from './profile.js?v=20261127-motion';
+import { PLATFORMS, MAX_CONTACTS, MAX_INTRO, normalizeProfile, contactHref, contactText, publicContacts } from './profile.js?v=20261127-cinema';
 const $ = id => document.getElementById(id);
 function el(tag, className, text) { const node = document.createElement(tag); if (className) node.className = className; if (text !== undefined) node.textContent = text; return node; }
 
