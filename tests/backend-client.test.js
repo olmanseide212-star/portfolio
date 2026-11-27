@@ -197,3 +197,35 @@ test('new empty album and invalid page lists fail before network access', async 
   await assert.rejects(api.save({...work,pages:[]}),/至少需要/);
   await assert.rejects(api.save({...work,pages:[{path:albumPath},{path:albumPath}]}),/重复/);
 });
+test('public profile read sends no admin token and sanitizes stored contacts', async () => {
+  const api = client(async (url, options) => {
+    assert.match(url, /site_profile\?select=intro,contacts&id=eq\.1/); assert.equal(options.headers.Authorization, undefined);
+    return response([{ intro: '你好', contacts: [{ platform: 'wechat', value: 'anno' }, { platform: 'website', value: 'javascript:alert(1)' }] }]);
+  });
+  assert.deepEqual(await api.getProfile(), { intro: '你好', contacts: [{ platform: 'wechat', value: 'anno' }] });
+  assert.equal(api.needsProfileUpgrade, false);
+});
+test('missing profile table keeps the site working and flags the upgrade', async () => {
+  const api = client(async () => response({ code: 'PGRST205', message: 'Could not find the table' }, 404));
+  assert.equal(await api.getProfile(), null); assert.equal(api.needsProfileUpgrade, true);
+  await assert.rejects(api.saveProfile({ intro: '', contacts: [] }), /升级脚本/);
+});
+test('saving the profile requires login and validates before any request', async () => {
+  const api = client(() => { throw new Error('must not call'); });
+  await assert.rejects(api.saveProfile({ contacts: [{ platform: 'website', value: 'http://x.com' }] }), /https:\/\//);
+  api.session = null; await assert.rejects(api.saveProfile({ intro: '', contacts: [] }), /登录/);
+});
+test('profile save sends one authenticated PATCH with trimmed values', async () => {
+  const calls = [];
+  const api = client(async (url, options) => { calls.push({ url, ...options }); return response([JSON.parse(options.body)]); });
+  const saved = await api.saveProfile({ intro: ' 你好 ', contacts: [{ platform: 'email', value: ' hi@example.com ', label: '' }] });
+  assert.equal(calls.length, 1); assert.equal(calls[0].method, 'PATCH'); assert.equal(calls[0].headers.Authorization, 'Bearer token');
+  assert.match(calls[0].url, /site_profile\?id=eq\.1/);
+  const body = JSON.parse(calls[0].body);
+  assert.equal(body.intro, '你好'); assert.deepEqual(body.contacts, [{ platform: 'email', value: 'hi@example.com' }]); assert.ok(Date.parse(body.updated_at));
+  assert.deepEqual(saved, { intro: '你好', contacts: [{ platform: 'email', value: 'hi@example.com' }] });
+});
+test('empty profile update result is reported as a failure', async () => {
+  const api = client(async () => response([]));
+  await assert.rejects(api.saveProfile({ intro: '', contacts: [] }), /资料未保存/);
+});

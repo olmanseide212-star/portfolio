@@ -30,3 +30,13 @@ export function movePage(pages, from, to) {
   if (!Number.isInteger(from) || !Number.isInteger(to) || from < 0 || from >= pages.length || to < 0 || to >= pages.length) return pages.slice();
   const result=pages.slice(), [page]=result.splice(from,1); result.splice(to,0,page); return result;
 }
+export function isMissingPlaceholder(page) {
+  return Boolean(page && page.static_image && !page.path && !page.file && page.missingPlaceholder === true);
+}
+export function countEffectivePages(pages) {
+  return pages.filter(page => !isMissingPlaceholder(page)).length;
+}
+export function mergeAddedPages(existingPages, addedPages) {
+  const kept = existingPages.filter(page => !isMissingPlaceholder(page));
+  return { pages: [...kept, ...addedPages], replacedCount: existingPages.length - kept.length };
+}

@@ -1,4 +1,7 @@
-import { projectPages, pageURL, validatePages } from './album.js?v=20261126-albums';
+import { projectPages, pageURL, validatePages } from './album.js?v=20261127-motion';
+import { normalizeProfile, publicContacts } from './profile.js?v=20261127-motion';
+const missingProfileTable = error => ['PGRST205', '42P01'].includes(error?.code);
+const profileRow = row => ({ intro: typeof row?.intro === 'string' ? row.intro : '', contacts: publicContacts(row?.contacts) });
 export class PortfolioAPI {
   constructor(config, request = fetch) {
     this.url = config.url.replace(/\/$/, '');
@@ -51,7 +54,7 @@ export class PortfolioAPI {
       if (detail?.code === '42703') throw Object.assign(new Error('数据库需要升级，请执行作品管理升级脚本'), { code: '42703' });
       if (detail?.code === '23514') throw new Error('数据不符合数据库规则，请检查分类、页数和图片路径，并确认已执行升级脚本');
       if (response.status === 413) throw new Error('图片不能超过 8 MB');
-      throw new Error(`请求失败（${response.status}），请检查后端配置或稍后重试`);
+      throw Object.assign(new Error(`请求失败（${response.status}），请检查后端配置或稍后重试`), { code: detail?.code, status: response.status });
     }
     const body = await response.text();
     return body ? JSON.parse(body) : null;
@@ -175,6 +178,35 @@ export class PortfolioAPI {
       }
       throw error;
     }
+  }
+
+  async getProfile() {
+    try {
+      const rows = await this.call('/rest/v1/site_profile?select=intro,contacts&id=eq.1');
+      this.needsProfileUpgrade = false;
+      return profileRow(rows?.[0]);
+    } catch (error) {
+      // Keep the gallery working until the owner applies the profile migration.
+      if (missingProfileTable(error)) { this.needsProfileUpgrade = true; return null; }
+      throw error;
+    }
+  }
+  async saveProfile(profile) {
+    if (!this.session) throw new Error('请先登录');
+    const clean = normalizeProfile(profile);
+    let rows;
+    try {
+      rows = await this.call('/rest/v1/site_profile?id=eq.1&select=intro,contacts', {
+        method: 'PATCH', headers: { Prefer: 'return=representation' },
+        body: JSON.stringify({ ...clean, updated_at: new Date().toISOString() })
+      }, true);
+    } catch (error) {
+      if (missingProfileTable(error)) throw new Error('请先在 Supabase 执行「关于我」升级脚本，再保存');
+      throw error;
+    }
+    if (!rows?.length) throw new Error('资料未保存，请确认已执行「关于我」升级脚本，并使用管理员账号登录');
+    this.needsProfileUpgrade = false;
+    return profileRow(rows[0]);
   }
 
 }
