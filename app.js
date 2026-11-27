@@ -7,11 +7,10 @@ import { renderAbout, createProfileEditor } from './about.js?v=20261127-cinema';
 const $ = id => document.getElementById(id);
 const api = backendConfig.url && backendConfig.publicKey ? new PortfolioAPI(backendConfig) : null;
 const defaults = ['节目单','海报','概念设计','PPT','摄影'];
+const pinnedCategories = ['概念设计'];
 const fallback = [
   ['十佳歌手节目单 2026','节目单','singer-contest-program-2026.jpg'],
-  ['烟雨杭州扑克概念','概念设计','misty-hangzhou-poker.jpg'],
   ['生日抽奖券','海报','birthday-raffle-ticket.jpg'],
-  ['院徽重绘','概念设计','college-emblem-redraw.jpg'],
   ['信息华章 PPT','PPT','information-huazhang-ppt.jpg'],
   ['摄影作品','摄影','photography.jpg']
 ].map(([title,category,file], i) => ({ id:`fallback-${i}`, title, category, description:'', static_image:`images/${file}` }));
@@ -97,12 +96,20 @@ function renderGallery({ immediate = true } = {}) {
     }
     info.append(meta,el('h3','',project.title)); if (project.description) info.append(el('p','',project.description)); card.append(info); return card;
   });
-  if (!cards.length) { const empty = el('div','empty'); empty.append(el('strong','',projects.length ? '暂时没有匹配的作品' : '新的创作，即将到来'),el('span','',projects.length ? '试试其他分类或搜索词。' : '这里将收录接下来的作品。')); cards.push(empty); }
+  if (!cards.length) {
+    const empty = el('div','empty');
+    const emptyCategory = !search && selectedCategory && !projects.some(p => p.category === selectedCategory);
+    empty.append(
+      el('strong','', emptyCategory ? `「${selectedCategory}」即将到来` : projects.length ? '暂时没有匹配的作品' : '新的创作，即将到来'),
+      el('span','', emptyCategory ? `这里将收录接下来的${selectedCategory}作品。` : projects.length ? '试试其他分类或搜索词。' : '这里将收录接下来的作品。')
+    );
+    cards.push(empty);
+  }
   $('grid').replaceChildren(...cards);
   reveal(cards, { immediate });
 }
 function renderFilters() {
-  const categories = [...new Set(projects.map(p => p.category))];
+  const categories = [...new Set([...projects.map(p => p.category), ...pinnedCategories])];
   if (!categories.includes(selectedCategory)) selectedCategory = '';
   $('filters').replaceChildren(...['', ...categories].map(category => {
     const button = el('button','filter',category || '全部'); button.dataset.category = category; button.setAttribute('aria-pressed',String(category === selectedCategory));

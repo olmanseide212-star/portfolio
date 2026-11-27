@@ -50,10 +50,8 @@ create policy portfolio_admin_read on storage.objects for select to authenticate
 
 -- Seed only on first installation. Existing artwork stays intact on rerun.
 insert into public.projects (id,title,category,static_image,sort_order) values
-('00000000-0000-4000-8000-000000000001','十佳歌手节目单 2026','节目单',null,6),
-('00000000-0000-4000-8000-000000000002','烟雨杭州扑克概念','概念设计',null,5),
-('00000000-0000-4000-8000-000000000003','生日抽奖券','海报',null,4),
-('00000000-0000-4000-8000-000000000004','院徽重绘','概念设计',null,3),
+('00000000-0000-4000-8000-000000000001','十佳歌手节目单 2026','节目单',null,4),
+('00000000-0000-4000-8000-000000000003','生日抽奖券','海报',null,3),
 ('00000000-0000-4000-8000-000000000005','信息华章 PPT','PPT',null,2),
 ('00000000-0000-4000-8000-000000000006','摄影作品','摄影',null,1)
 on conflict (id) do nothing;
