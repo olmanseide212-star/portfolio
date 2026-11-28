@@ -12,6 +12,7 @@ let introTimers = [];
 let introCleanup = null;
 
 export function motionAllowed() { return !reduceMotion.matches; }
+export function compactViewport() { return media('(max-width: 600px)').matches; }
 
 function readSeen() {
   try { return sessionStorage.getItem(INTRO_KEY) === '1'; } catch { return false; }
@@ -21,7 +22,7 @@ function markSeen() {
 }
 
 export function initMotion() {
-  if (!motionAllowed() || typeof IntersectionObserver !== 'function') return;
+  if (!motionAllowed() || compactViewport() || typeof IntersectionObserver !== 'function') return;
   observer = new IntersectionObserver(entries => {
     let batch = 0;
     for (const entry of entries) {
@@ -49,7 +50,7 @@ export function playIntro({ force = false } = {}) {
   };
   clearTimers();
   if (introCleanup) { introCleanup(); introCleanup = null; }
-  const allowed = shouldPlayIntro({ reducedMotion: !motionAllowed(), seenInSession: readSeen(), force });
+  const allowed = (force || !compactViewport()) && shouldPlayIntro({ reducedMotion: !motionAllowed(), seenInSession: readSeen(), force });
   if (!curtain || !allowed) {
     if (curtain) curtain.classList.remove('is-active', 'is-charging', 'is-opening');
     releaseHero(false);
@@ -266,9 +267,10 @@ export function initScrollChoreography() {
     const { progress, heroRatio } = computeScrollMetrics(window.scrollY, document.documentElement.scrollHeight, window.innerHeight, heroHeight);
     if (bar) bar.style.transform = `scaleX(${progress.toFixed(4)})`;
     if (hero && motionAllowed()) {
-      hero.style.setProperty('--hero-shift', `${(heroRatio * 84).toFixed(1)}px`);
-      hero.style.setProperty('--hero-scale', (1 - heroRatio * 0.055).toFixed(4));
-      hero.style.setProperty('--hero-opacity', (1 - heroRatio * 0.68).toFixed(3));
+      const offset = compactViewport() ? 0 : heroRatio;
+      hero.style.setProperty('--hero-shift', `${(offset * 84).toFixed(1)}px`);
+      hero.style.setProperty('--hero-scale', (1 - offset * 0.055).toFixed(4));
+      hero.style.setProperty('--hero-opacity', (1 - offset * 0.68).toFixed(3));
     }
   };
   const onScroll = () => { if (!frame) frame = requestAnimationFrame(update); };

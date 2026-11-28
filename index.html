@@ -2,11 +2,10 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#101e2b">
   <meta name="description" content="个人作品集，收录平面设计、视觉概念、演示设计与摄影作品。">
   <title>作品集 · Selected Works</title>
-  <script>try{if(!matchMedia('(prefers-reduced-motion:reduce)').matches&&!sessionStorage.getItem('portfolio_intro_seen'))document.documentElement.classList.add('intro-pending')}catch{}</script>
   <style>
     :root{
       --navy:#101e2b;
@@ -1018,8 +1017,45 @@
       .contact-row { grid-template-columns:1fr; }
       .contact-row .contact-label { grid-column:auto; }
     }
-    @media(max-width:420px) {
-      .nav-links [data-open-admin] { display:none; }
+    .retry-button { text-decoration:underline; text-underline-offset:4px; }
+    .gallery-status:has(.retry-button:not([hidden])) { margin-bottom:18px; }
+    .about-edit { margin-top:16px; color:#d8c498; text-decoration:underline; text-underline-offset:4px; }
+    #profileFields { border:0; padding:0; margin:0; min-inline-size:0; }
+    #profileFields:disabled { opacity:.6; }
+    #profileFields .form-actions { margin-top:24px; }
+    @media(max-width:600px) {
+      .wrap { width:calc(100% - max(16px, env(safe-area-inset-left)) - max(16px, env(safe-area-inset-right))); }
+      .nav { height:auto; min-height:76px; flex-wrap:wrap; justify-content:space-between; column-gap:16px; row-gap:2px; padding-top:max(10px, env(safe-area-inset-top)); padding-bottom:8px; }
+      .brand { min-height:44px; }
+      .brand-mark { flex-shrink:0; }
+      .nav-links { flex-wrap:wrap; column-gap:14px; row-gap:0; }
+      .nav-links a,.nav-links button,.footer-actions a,.footer-actions button { display:inline-flex; align-items:center; min-height:44px; }
+      .hero { padding-top:36px; }
+      .hero h1 { font-size:clamp(32px,11vw,46px); overflow-wrap:anywhere; }
+      .hero-bottom { flex-wrap:wrap; gap:8px 16px; }
+      .section-head { flex-wrap:wrap; gap:10px 20px; }
+      .footer-inner { padding-bottom:max(28px, env(safe-area-inset-bottom)); }
+      .footer-actions { justify-content:flex-start; flex-wrap:wrap; gap:0 16px; }
+      .contact-text span { white-space:normal; overflow-wrap:anywhere; }
+      .admin-dialog,.confirm-dialog {
+        max-height:calc(100vh - 24px);
+        max-height:calc(100dvh - max(12px,env(safe-area-inset-top)) - max(12px,env(safe-area-inset-bottom)));
+        overscroll-behavior-y:contain;
+      }
+      .dialog-top { padding:12px 16px; }
+      .admin-body { padding:18px 16px; }
+      .tabs { flex-wrap:wrap; column-gap:16px; row-gap:0; }
+      .field input,.field select,.field textarea,.page-name input,.contact-row input,.contact-row select,.search input { font-size:16px; }
+      .page-editor-row { min-width:0; }
+      .lightbox { width:100%; height:100vh; height:100dvh; max-height:100dvh; overflow:auto; }
+      .lightbox-layout {
+        height:auto; min-height:100%;
+        padding:calc(60px + env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(20px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));
+      }
+      .lightbox .icon-close { top:max(12px,env(safe-area-inset-top)); right:max(16px,env(safe-area-inset-right)); }
+      .lightbox .page-stage { flex:1 0 45vh; flex-basis:45dvh; min-height:140px; }
+      .lightbox .page-stage img { position:absolute; inset:0; }
+      .lightbox-layout h2,.lightbox-layout p { overflow-wrap:anywhere; }
     }
     @media(hover:none),(pointer:coarse) {
       .cursor-dot,.cursor-ring { display:none!important; }
@@ -1046,19 +1082,38 @@
     <nav class="nav wrap" aria-label="主导航"><a class="brand" href="#top"><span class="brand-mark" aria-hidden="true">P</span>PORTFOLIO / 作品集</a><div class="nav-links"><a href="#works">浏览作品</a><a href="#about">关于我</a><button class="text-button" data-open-admin>管理</button></div></nav>
     <header class="wrap"><div class="hero"><div><p class="eyebrow">Visual Design &amp; Photography</p><h1><span class="line-mask"><span class="line">把想法，</span></span><br><span class="line-mask"><span class="line">留在<em>画面里。</em></span></span></h1></div><div class="hero-side"><p class="english" lang="en">Selected<br>works.</p><p>关于设计、影像与日常观察。<br>在这里，记录每一次创作。</p></div></div><div class="hero-bottom"><span>独立创作 · 持续记录</span><span>DESIGN / IMAGE / EXPLORATION</span></div></header>
   </div>
-  <main class="works wrap" id="works"><div class="section-head"><h2>作品选集 <span lang="en">The collection</span></h2><span class="collection-count" id="count">04 件作品</span></div><div class="tools"><nav class="filters" id="filters" aria-label="作品分类"><button class="filter" data-category="" aria-pressed="true">全部</button></nav><label class="search"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><span class="sr-only">搜索作品</span><input id="search" type="search" placeholder="搜索标题、分类或介绍"></label></div><p class="status" id="backendStatus" role="status" aria-live="polite"></p><div class="works-grid" id="grid">
-<article class="card"><div class="placeholder"><strong>十佳歌手节目单 2026</strong><span>图片待补充</span></div><div class="card-info"><div class="card-meta">节目单</div><h3>十佳歌手节目单 2026</h3></div></article>
-<article class="card"><div class="placeholder"><strong>生日抽奖券</strong><span>图片待补充</span></div><div class="card-info"><div class="card-meta">海报</div><h3>生日抽奖券</h3></div></article>
-<article class="card"><div class="placeholder"><strong>信息华章 PPT</strong><span>图片待补充</span></div><div class="card-info"><div class="card-meta">PPT</div><h3>信息华章 PPT</h3></div></article>
-<article class="card"><div class="placeholder"><strong>摄影作品</strong><span>图片待补充</span></div><div class="card-info"><div class="card-meta">摄影</div><h3>摄影作品</h3></div></article>
-  </div><noscript><p class="status">开启 JavaScript 后可查看最新作品与完整图片。</p></noscript></main>
-  <section class="about" id="about" aria-labelledby="aboutHeading"><div class="wrap about-inner"><div class="about-heading"><p class="eyebrow">About &amp; Contact</p><h2 id="aboutHeading">关于我 <span lang="en">Say hello.</span></h2><p class="about-intro" id="aboutIntro" hidden></p></div><div><ul class="contact-list" id="contactList" aria-label="联系方式"></ul><p class="about-empty" id="aboutEmpty">联系方式即将更新。</p></div></div></section>
+  <main class="works wrap" id="works"><div class="section-head"><h2>作品选集 <span lang="en">The collection</span></h2><span class="collection-count" id="count" aria-live="polite"></span></div><div class="tools"><nav class="filters" id="filters" aria-label="作品分类"><button class="filter" data-category="" aria-pressed="true">全部</button></nav><label class="search"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><span class="sr-only">搜索作品</span><input id="search" type="search" placeholder="搜索标题、分类或介绍"></label></div><div class="gallery-status"><p class="status" id="backendStatus" role="status"></p><button id="retryGallery" class="text-button retry-button" type="button" hidden>重新加载</button></div>
+    <div class="works-grid" id="grid">
+      <!-- Add public, self-contained featured cards here once the artwork is supplied. -->
+      <p class="empty">精选作品待更新</p>
+    </div>
+  </main>
+  <section class="about" id="about" aria-labelledby="aboutHeading"><div class="wrap about-inner"><div class="about-heading"><p class="eyebrow">About &amp; Contact</p><h2 id="aboutHeading">关于我 <span lang="en">Say hello.</span></h2><p class="about-intro" id="aboutIntro" hidden></p><button type="button" class="text-button about-edit" id="editAbout" data-open-admin="profile" hidden>编辑自我介绍</button></div><div><ul class="contact-list" id="contactList" aria-label="联系方式"></ul><p class="about-empty" id="aboutEmpty">联系方式即将更新。</p></div></div></section>
   <footer><div class="wrap footer-inner"><div><p class="footer-title">A work in progress.</p><p class="footer-note">创作未完，记录继续。</p></div><div class="footer-actions"><span>© 2026 个人作品集</span><a href="#about">联系我</a><button class="text-button" id="replayIntro" type="button">重播开场</button><button class="text-button" data-open-admin>管理作品</button><a href="#top">回到顶部</a></div></div></footer>
-  <dialog id="adminDialog" class="admin-dialog" aria-labelledby="adminHeading"><div class="dialog-top"><div><p class="eyebrow">Portfolio Studio</p><h2 id="adminHeading">作品管理</h2></div><button class="icon-close" id="adminClose" aria-label="关闭作品管理">×</button></div><div class="admin-body">
-    <form id="loginForm"><p class="intro">登录后，整理作品、添加图片，记录新的创作。</p><label class="field"><span>邮箱</span><input name="email" type="email" autocomplete="username" required></label><label class="field"><span>密码</span><input name="password" type="password" autocomplete="current-password" required></label><button class="button" type="submit">登录工作室</button></form>
-    <section id="studio" hidden><div class="admin-toolbar"><p class="intro" style="margin:0">你的作品，由你编排。</p><button class="text-button" id="logoutButton">退出登录</button></div><div class="tabs" role="group" aria-label="管理视图"><button id="editTab" aria-pressed="true">发布与编辑</button><button id="profileTab" aria-pressed="false">关于我</button><button id="trashTab" aria-pressed="false">回收站</button></div>
+  <dialog id="adminDialog" class="admin-dialog" aria-labelledby="adminHeading"><div class="dialog-top"><div><p class="eyebrow">Portfolio Studio</p><h2 id="adminHeading">作品集管理</h2></div><button class="icon-close" id="adminClose" aria-label="关闭管理面板">×</button></div><div class="admin-body">
+    <form id="loginForm"><p class="intro">登录后可以管理作品和自我介绍。</p><label class="field"><span>邮箱</span><input name="email" type="email" autocomplete="username" required></label><label class="field"><span>密码</span><input name="password" type="password" autocomplete="current-password" required></label><button class="button" type="submit">登录工作室</button></form>
+    <section id="studio" hidden><div class="admin-toolbar"><p class="intro" style="margin:0">你的作品，由你编排。</p><button class="text-button" id="logoutButton">退出登录</button></div><div class="tabs" role="group" aria-label="管理视图"><button id="editTab" aria-pressed="true">发布与编辑</button><button id="profileTab" aria-pressed="false">自我介绍</button><button id="trashTab" aria-pressed="false">回收站</button></div>
+      <div id="workDataNotice" hidden><p class="status">暂时无法读取在线作品。</p><button class="button secondary" id="retryWorkData" type="button">重新加载作品</button></div>
       <form id="workForm"><label class="field"><span>选择操作</span><select name="project"><option value="">新增作品</option></select></label><div class="form-grid"><label class="field"><span>作品标题</span><input name="title" maxlength="80" required placeholder="给这件作品起个名字"></label><label class="field"><span>作品分类</span><input name="category" list="categoryOptions" maxlength="30" required placeholder="选择已有分类，或输入新分类"><datalist id="categoryOptions"></datalist><small>新分类会在作品发布后出现在首页。</small></label></div><label class="field"><span>作品介绍</span><textarea name="description" maxlength="1000" rows="3" placeholder="想法、背景，或值得留意的细节。"></textarea></label><div class="upload-area"><label class="field"><span>添加作品页面</span><input name="image" type="file" multiple accept="image/jpeg,image/png,image/webp"><small>一次选择正面、背面等多张图片，每件作品最多 30 页。每张原图最大 50 MB，自动压缩；添加图片会保留已有页面。</small></label><p class="file-info" id="fileInfo" aria-live="polite"></p></div><div class="page-editor-heading"><h3>作品文件夹</h3><span id="pageEditorCount">0 / 30 页 · 第一页为封面</span></div><div id="pageEditor" class="page-editor"></div><p class="page-editor-note">调整顺序、名称和移除单页后，点击保存才会生效。移除的图片不会立即从云存储删除。</p><div class="form-actions"><button class="button danger" type="button" id="deleteButton" hidden>删除作品</button><div><button class="button secondary" type="button" id="resetButton">清空表单</button><button class="button" type="submit" id="publishButton">发布作品</button></div></div></form>
-      <form id="profileForm" hidden novalidate><p id="profileNotice" class="status error" hidden>尚未执行「关于我」升级脚本（backend/migrations/20261127_profile.sql）。执行后才能保存联系方式。</p><p class="intro">这里的内容会显示在首页「关于我」，保存后立即生效。邮箱和微信号会公开展示，建议使用对外联系专用的账号。</p><label class="field"><span>一句话介绍（可选）</span><textarea name="intro" maxlength="300" rows="3" placeholder="例如：设计与摄影双栖创作者，关注排版、影像与日常里的光。"></textarea><small id="introCount">0 / 300</small></label><div class="page-editor-heading"><h3>联系方式</h3><span id="contactCount">0 / 12 条</span></div><div id="contactEditor"></div><button class="button secondary" type="button" id="addContact">+ 添加联系方式</button><div class="form-actions"><span></span><div><button class="button secondary" type="button" id="resetProfile">撤销修改</button><button class="button" type="submit" id="saveProfile">保存关于我</button></div></div></form>
+      <form id="profileForm" hidden>
+        <p id="profileNotice" class="status" role="status">正在读取个人资料…</p>
+        <button id="retryProfile" class="button secondary" type="button" hidden>重新加载资料</button>
+        <fieldset id="profileFields" disabled>
+          <label class="field">
+            <span>首页自我介绍</span>
+            <textarea name="intro" maxlength="300" rows="5" aria-describedby="introHelp introCount" placeholder="写下你主要做什么、关注什么，或正在寻找怎样的合作。"></textarea>
+            <small id="introHelp">最多 300 字，可分段。保存后显示在首页「关于我」。</small>
+            <small id="introCount">0 / 300</small>
+          </label>
+          <div class="page-editor-heading"><h3>联系方式</h3><span id="contactCount">0 / 12 条</span></div>
+          <div id="contactEditor"></div>
+          <button class="button secondary" type="button" id="addContact">+ 添加联系方式</button>
+          <div class="form-actions"><div>
+            <button class="button secondary" type="button" id="resetProfile">撤销修改</button>
+            <button class="button" type="submit" id="saveProfile">保存自我介绍与联系方式</button>
+          </div></div>
+        </fieldset>
+      </form>
       <section id="trashPanel" hidden aria-label="已删除作品"><p class="intro">删除的作品不再展示在首页，可在这里恢复。图片会保留，仍占用云存储空间。</p><div id="trashList"></div><button class="text-button" id="retryTrash">刷新回收站</button></section>
     </section><p id="adminStatus" class="status" role="status" aria-live="polite"></p>
   </div></dialog>
@@ -1067,5 +1122,5 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <div class="cursor-ring" id="cursorRing" aria-hidden="true"><span>VIEW</span></div>
   <div class="cursor-dot" id="cursorDot" aria-hidden="true"></div>
-  <script type="module" src="app.js?v=20261127-cinema2"></script>
+  <script type="module" src="app.js?v=20261128-mobile"></script>
 </body></html>

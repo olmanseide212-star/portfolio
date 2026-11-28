@@ -2,20 +2,28 @@ import { backendConfig } from './config.js';
 import { PortfolioAPI } from './backend-client.js?v=20261127-cinema';
 import { prepareImage, formatSize } from './image-processing.js?v=20261126';
 import { MAX_PAGES, projectPages, pageURL, movePage, isMissingPlaceholder, countEffectivePages, mergeAddedPages } from './album.js?v=20261127-cinema';
-import { initMotion, playIntro, initHeroAtmosphere, initCursor, enableMagnetic, initScrollChoreography, reveal, enableTilt, transition } from './motion.js?v=20261127-cinema';
+import { initMotion, playIntro, initHeroAtmosphere, initCursor, enableMagnetic, initScrollChoreography, reveal, enableTilt, transition, compactViewport } from './motion.js?v=20261128-mobile';
 import { renderAbout, createProfileEditor } from './about.js?v=20261127-cinema';
 const $ = id => document.getElementById(id);
 const api = backendConfig.url && backendConfig.publicKey ? new PortfolioAPI(backendConfig) : null;
 const defaults = ['节目单','海报','概念设计','PPT','摄影'];
 const pinnedCategories = ['概念设计'];
-const fallback = [
-  ['十佳歌手节目单 2026','节目单','singer-contest-program-2026.jpg'],
-  ['生日抽奖券','海报','birthday-raffle-ticket.jpg'],
-  ['信息华章 PPT','PPT','information-huazhang-ppt.jpg'],
-  ['摄影作品','摄影','photography.jpg']
-].map(([title,category,file], i) => ({ id:`fallback-${i}`, title, category, description:'', static_image:`images/${file}` }));
+// Published backups are ordinary HTML links, usable even if the API or scripts fail.
+const fallback = Array.from(document.querySelectorAll('#grid article[data-featured]'), (article, index) => ({
+  id: `featured-${index}`,
+  title: article.querySelector('h3').textContent.trim(),
+  category: article.dataset.category,
+  description: article.querySelector('.featured-description')?.textContent.trim() || '',
+  images: Array.from(article.querySelectorAll('a[data-page]'), page => ({
+    static_image: page.getAttribute('href'),
+    caption: page.dataset.page
+  }))
+}));
 let projects = fallback, archived = [], online = false, selectedCategory = '', busy = false, draftPages = [], viewingProject = null, viewingPage = 0, dirty = false, editingId = '';
 let profile = null, profileEditor = null, pageToken = 0;
+let adminDestination = 'edit';
+let profileRequest;
+let canEditProfile = false;
 const form = $('workForm'), login = $('loginForm'), admin = $('adminDialog');
 function el(tag, className, text) { const node = document.createElement(tag); if (className) node.className = className; if (text !== undefined) node.textContent = text; return node; }
 function notify(text, error = false) { $('adminStatus').textContent = text; $('adminStatus').classList.toggle('error', error); }
@@ -24,6 +32,7 @@ function setBusy(value) {
   admin.querySelectorAll('input,textarea,select,button').forEach(node => { node.disabled = value; });
   $('deleteDialog').querySelectorAll('button').forEach(node => { node.disabled = value; });
   if (!value) { updatePageControls(); profileEditor?.updateControls(); }
+  $('profileFields').disabled = value || !canEditProfile;
 }
 function imageURL(project) { return pageURL(projectPages(project)[0] || {}, api?.url); }
 function openImage(project, index = 0) {
@@ -99,9 +108,10 @@ function renderGallery({ immediate = true } = {}) {
   if (!cards.length) {
     const empty = el('div','empty');
     const emptyCategory = !search && selectedCategory && !projects.some(p => p.category === selectedCategory);
+    const waitingForWorks = !online && !projects.length;
     empty.append(
-      el('strong','', emptyCategory ? `「${selectedCategory}」即将到来` : projects.length ? '暂时没有匹配的作品' : '新的创作，即将到来'),
-      el('span','', emptyCategory ? `这里将收录接下来的${selectedCategory}作品。` : projects.length ? '试试其他分类或搜索词。' : '这里将收录接下来的作品。')
+      el('strong','', waitingForWorks ? '精选作品待更新' : emptyCategory ? `「${selectedCategory}」即将到来` : projects.length ? '暂时没有匹配的作品' : '新的创作，即将到来'),
+      el('span','', waitingForWorks ? '' : emptyCategory ? `这里将收录接下来的${selectedCategory}作品。` : projects.length ? '试试其他分类或搜索词。' : '这里将收录接下来的作品。')
     );
     cards.push(empty);
   }
@@ -125,7 +135,17 @@ function renderPicker() {
 async function refreshProjects(immediate = true) {
   if (!api) throw new Error('尚未连接后端');
   projects = await api.list(); online = true;
-  $('backendStatus').textContent = ''; renderFilters(); renderGallery({ immediate }); renderPicker();
+  $('backendStatus').textContent = ''; $('retryGallery').hidden = true;
+  renderFilters(); renderGallery({ immediate }); renderPicker();
+}
+async function loadGallery() {
+  $('backendStatus').textContent = '正在加载最新作品…';
+  $('retryGallery').hidden = true;
+  try { await refreshProjects(); }
+  catch {
+    $('backendStatus').textContent = online ? '暂时无法刷新在线作品。' : fallback.length ? '暂时无法加载最新作品，以下是精选作品。' : '暂时无法加载在线作品，请重试。';
+    $('retryGallery').hidden = false;
+  }
 }
 function clearPages() {
   for (const page of draftPages) if (page.previewURL) URL.revokeObjectURL(page.previewURL);
@@ -216,18 +236,27 @@ function selectProject(id = '') {
 function allowDiscard() { return !dirty || window.confirm('当前修改尚未保存，要放弃这些修改吗？'); }
 function allowDiscardAll() { return !(dirty || profileEditor?.isDirty()) || window.confirm('当前修改尚未保存，要放弃这些修改吗？'); }
 function discardAll() { selectProject(); profileEditor?.discard(); }
-function openAdmin() { if (!admin.open) admin.showModal(); if (!api) notify('管理功能尚未连接。',true); }
+function openAdmin(destination = 'edit') {
+  adminDestination = destination;
+  if (!admin.open) admin.showModal();
+  if (!api) { notify('管理功能尚未连接。', true); return; }
+  if (api.session && !$('studio').hidden) showStudioTab(destination);
+}
 function showStudioTab(tab = 'edit') {
-  $('workForm').hidden = tab !== 'edit'; $('profileForm').hidden = tab !== 'profile'; $('trashPanel').hidden = tab !== 'trash';
+  $('profileForm').hidden = tab !== 'profile'; $('trashPanel').hidden = tab !== 'trash';
   $('editTab').setAttribute('aria-pressed', String(tab === 'edit'));
   $('profileTab').setAttribute('aria-pressed', String(tab === 'profile'));
   $('trashTab').setAttribute('aria-pressed', String(tab === 'trash'));
+  $('workDataNotice').hidden = tab !== 'edit' || online;
+  $('workForm').hidden = tab !== 'edit' || !online;
 }
 function requireLoginIfExpired() {
   if (api?.session) return;
-  $('studio').hidden = true; login.hidden = false; renderGallery();
+  $('studio').hidden = true; login.hidden = false; $('editAbout').hidden = true; renderGallery();
 }
-for (const button of document.querySelectorAll('[data-open-admin]')) button.addEventListener('click',openAdmin);
+for (const button of document.querySelectorAll('[data-open-admin]')) {
+  button.addEventListener('click', () => openAdmin(button.dataset.openAdmin || 'edit'));
+}
 $('adminClose').addEventListener('click', () => { if (!busy && allowDiscardAll()) { discardAll(); admin.close(); } });
 admin.addEventListener('cancel', event => { if (busy || !allowDiscardAll()) event.preventDefault(); else discardAll(); });
 $('lightboxClose').addEventListener('click', () => $('lightbox').close());
@@ -281,7 +310,13 @@ login.addEventListener('submit', async event => {
   setBusy(true); notify('正在登录…');
   try {
     await api.login(login.elements.email.value.trim(),login.elements.password.value);
-    await refreshProjects(); await loadProfile(); login.reset(); login.hidden = true; $('studio').hidden = false; showStudioTab('edit'); selectProject(); notify(api.needsSchemaUpgrade ? '已登录。请先执行数据库升级脚本，再使用自定义分类和回收站；现有作品仍可编辑。' : api.needsAlbumUpgrade ? '已登录。保存多页作品前，请先执行多页作品升级脚本。' : '已登录，可以添加多页作品。');
+    login.reset(); login.hidden = true; $('studio').hidden = false;
+    await Promise.all([loadGallery(), loadProfile()]);
+    selectProject(); showStudioTab(adminDestination);
+    $('editAbout').hidden = false;
+    notify(adminDestination === 'profile' ? '' : api.needsSchemaUpgrade
+      ? '已登录。请先执行数据库升级脚本，再使用自定义分类和回收站。'
+      : api.needsAlbumUpgrade ? '已登录。保存多页作品前，请先执行多页作品升级脚本。' : '已登录。');
   } catch (error) { notify(error.message,true); }
   finally { setBusy(false); }
 });
@@ -289,7 +324,7 @@ $('logoutButton').addEventListener('click', async () => {
   if (busy || !allowDiscardAll()) return; setBusy(true);
   try { await api.logout(); notify('已退出登录。'); }
   catch { notify('本机已退出；服务器会话撤销未确认。',true); }
-  finally { discardAll(); showStudioTab('edit'); $('studio').hidden = true; login.hidden = false; archived = []; $('trashList').replaceChildren(); renderGallery(); setBusy(false); }
+  finally { discardAll(); showStudioTab('edit'); $('studio').hidden = true; login.hidden = false; $('editAbout').hidden = true; archived = []; $('trashList').replaceChildren(); renderGallery(); setBusy(false); }
 });
 form.addEventListener('submit', async event => {
   event.preventDefault(); if (busy || !api) return;
@@ -338,23 +373,49 @@ $('trashTab').addEventListener('click', () => { showStudioTab('trash'); loadTras
 $('editTab').addEventListener('click', () => { showStudioTab('edit'); notify(''); });
 $('profileTab').addEventListener('click', () => { showStudioTab('profile'); notify(''); });
 $('retryTrash').addEventListener('click',loadTrash);
+$('retryGallery').addEventListener('click', loadGallery);
+$('retryWorkData').addEventListener('click', async () => {
+  setBusy(true);
+  try { await loadGallery(); showStudioTab('edit'); }
+  finally { setBusy(false); }
+});
+$('retryProfile').addEventListener('click', loadProfile);
 $('replayIntro')?.addEventListener('click', () => { window.scrollTo({ top: 0, behavior: 'instant' }); playIntro({ force: true }); });
 window.addEventListener('beforeunload', event => { if (busy || dirty || profileEditor?.isDirty()) { event.preventDefault(); event.returnValue = ''; } });
-async function loadProfile() {
+function loadProfile() {
   if (!api) { renderAbout(null, reveal); return; }
-  try { profile = await api.getProfile(); } catch { profile = null; }
-  renderAbout(profile, reveal);
-  $('profileNotice').hidden = !api.needsProfileUpgrade;
-  if (!profileEditor.isDirty()) profileEditor.load(profile);
+  if (profileRequest) return profileRequest;
+  $('retryProfile').disabled = true;
+  profileRequest = (async () => {
+    try {
+      const current = await api.getProfile();
+      canEditProfile = current !== null;
+      profile = current;
+      renderAbout(profile, reveal);
+      if (!profileEditor.isDirty()) profileEditor.load(profile);
+      $('profileNotice').textContent = api.needsProfileUpgrade
+        ? '请先执行 Supabase 的「关于我」升级脚本，再编辑自我介绍。'
+        : '暂未找到个人资料。请确认已执行「关于我」升级脚本。';
+    } catch {
+      canEditProfile = false;
+      $('profileNotice').textContent = '暂时无法读取个人资料，请重试。';
+    } finally {
+      $('profileFields').disabled = busy || !canEditProfile;
+      $('profileNotice').hidden = canEditProfile;
+      $('retryProfile').hidden = canEditProfile;
+      $('retryProfile').disabled = busy;
+      profileRequest = null;
+    }
+  })();
+  return profileRequest;
 }
 profileEditor = createProfileEditor({
   api, notify, setBusy, isBusy: () => busy, onAuthLost: requireLoginIfExpired,
   onSaved: row => { profile = row; renderAbout(profile, nodes => reveal(nodes, { immediate:true })); $('profileNotice').hidden = true; }
 });
-initMotion(); playIntro(); initHeroAtmosphere($('top'), $('heroCanvas')); initCursor(); enableMagnetic(document.body); initScrollChoreography(); enableTilt($('grid'));
-renderFilters(); renderGallery({ immediate:false });
+initMotion(); playIntro();
+if (!compactViewport()) initHeroAtmosphere($('top'), $('heroCanvas'));
+initCursor(); enableMagnetic(document.body); initScrollChoreography(); enableTilt($('grid'));
+renderFilters(); renderGallery();
 loadProfile();
-if (api) {
-  $('backendStatus').textContent = '正在加载作品…';
-  refreshProjects(false).catch(error => { online = false; $('backendStatus').textContent = `在线作品暂时无法加载，当前为静态展示。${error.message}`; });
-}
+if (api) loadGallery();
